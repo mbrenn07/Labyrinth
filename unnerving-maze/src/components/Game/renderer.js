@@ -16,6 +16,67 @@ export function setScreenDimensions(width, height) {
     numofrays = Math.ceil(screenWidth / stripWidth);
 }
 
+export function distToWall(startX, startY, rayAngle, gameState) {
+    rayAngle %= Math.PI * 2;
+    if (rayAngle < 0) rayAngle += Math.PI * 2;
+
+    const right = (rayAngle > Math.PI * 2 * 0.75 || rayAngle < Math.PI * 2 * 0.25);
+    const up = (rayAngle < 0 || rayAngle > Math.PI);
+    const angleSin = Math.sin(rayAngle);
+    const angleCos = Math.cos(rayAngle);
+
+    let distance = Number.MAX_VALUE;
+
+    // Vertical cast
+    {
+        const slopeVer = angleSin / angleCos;
+        const dXVer = right ? 1 : -1;
+        const dYVer = dXVer * slopeVer;
+        let x = right ? Math.ceil(startX) : Math.floor(startX);
+        let y = startY + (x - startX) * slopeVer;
+
+        while (x >= 0 && x < gameState.current.mapWidth && y >= 0 && y < gameState.current.mapHeight) {
+            const wallX = x + (right ? 0 : -1);
+            const wallY = Math.floor(y);
+
+            if (gameState.current.map[wallY][wallX] > 0) {
+                const distX = x - startX;
+                const distY = y - startY;
+                distance = Math.min(distance, distX * distX + distY * distY);
+                break;
+            }
+            x += dXVer;
+            y += dYVer;
+        }
+    }
+
+    // Horizontal cast
+    {
+        const slopeHor = angleCos / angleSin;
+        const dYHor = up ? -1 : 1;
+        const dXHor = dYHor * slopeHor;
+        let y = up ? Math.floor(startY) : Math.ceil(startY);
+        let x = startX + (y - startY) * slopeHor;
+
+        while (x >= 0 && x < gameState.current.mapWidth && y >= 0 && y < gameState.current.mapHeight) {
+            const wallY = y + (up ? -1 : 0);
+            const wallX = Math.floor(x);
+
+            if (gameState.current.map[wallY][wallX] > 0) {
+                const distX = x - startX;
+                const distY = y - startY;
+                const blockDist = distX * distX + distY * distY;
+                distance = Math.min(distance, blockDist);
+                break;
+            }
+            x += dXHor;
+            y += dYHor;
+        }
+    }
+
+    return Math.sqrt(distance);
+}
+
 export function initScreen(screenRef) {
     // Clear existing strips
     screenStrips.forEach(strip => strip.remove());

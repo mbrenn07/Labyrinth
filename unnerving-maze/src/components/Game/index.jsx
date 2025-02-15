@@ -55,6 +55,19 @@ export default function Game() {
             const delta = timestamp - lastTime;
             lastTime = timestamp;
 
+            // Update NPCs
+            gameState.current.npcs.forEach(npc => {
+                npc.update(timestamp);
+            });
+
+            // Update NPC sprites
+            gameState.current.sprites.forEach(sprite => {
+                if (sprite.isNPC && sprite.npcRef) {
+                    sprite.x = sprite.npcRef.x;
+                    sprite.y = sprite.npcRef.y;
+                }
+            });
+
             // Update game state
             move(gameState, delta);
             updateMap(gameState, minimapRef, objectsRef);
