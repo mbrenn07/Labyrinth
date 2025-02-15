@@ -1,0 +1,50 @@
+.container {
+    text-align: center;
+    padding: 20px;
+}
+
+.video-container {
+    position: relative;
+    display: inline-block;
+}
+
+.emotion-results {
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: left;
+}
+
+.emotion-bar {
+    margin: 10px 0;
+}
+
+.emotion-label {
+    display: inline-block;
+    width: 120px;
+    text-transform: capitalize;
+    font-weight: bold;
+}
+
+.meter {
+    display: inline-block;
+    width: 400px;
+    height: 25px;
+    background: #eee;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+}
+
+.meter div {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.score {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #333;
+    font-size: 14px;
+}

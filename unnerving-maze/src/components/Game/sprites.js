@@ -15,8 +15,8 @@ export function initSprites(gameState, screenRef) {
     gameState.current.npcs = [];
     // Example NPC path
     const examplePath = [
-        [10, 3.5],
-        // [9, 3.5],
+        [10, 11],
+        [9, 11],
         // [9, 2.5],
     ];
 

@@ -5,6 +5,8 @@ export const fov = 80 * Math.PI / 180;
 export let viewDist = (screenWidth / 2) / Math.tan(fov / 2);
 export let numofrays = Math.ceil(screenWidth / stripWidth);
 export const numoftex = 3;
+export const MAX_RENDER_DISTANCE = 0; // Reduce if possible
+
 
 let screenStrips = [];
 
@@ -28,64 +30,60 @@ export function isPointVisible(startX, startY, targetX, targetY, gameState) {
 }
 
 export function distToWall(startX, startY, rayAngle, gameState) {
-    rayAngle %= Math.PI * 2;
-    if (rayAngle < 0) rayAngle += Math.PI * 2;
+    let rayDirX = Math.cos(rayAngle);
+    let rayDirY = Math.sin(rayAngle);
 
-    const right = (rayAngle > Math.PI * 2 * 0.75 || rayAngle < Math.PI * 2 * 0.25);
-    const up = (rayAngle < 0 || rayAngle > Math.PI);
-    const angleSin = Math.sin(rayAngle);
-    const angleCos = Math.cos(rayAngle);
+    let mapX = Math.floor(startX);
+    let mapY = Math.floor(startY);
 
-    let distance = Number.MAX_VALUE;
+    let deltaDistX = Math.abs(1 / rayDirX);
+    let deltaDistY = Math.abs(1 / rayDirY);
 
-    // Vertical cast
-    {
-        const slopeVer = angleSin / angleCos;
-        const dXVer = right ? 1 : -1;
-        const dYVer = dXVer * slopeVer;
-        let x = right ? Math.ceil(startX) : Math.floor(startX);
-        let y = startY + (x - startX) * slopeVer;
+    let stepX, stepY;
+    let sideDistX, sideDistY;
 
-        while (x >= 0 && x < gameState.current.mapWidth && y >= 0 && y < gameState.current.mapHeight) {
-            const wallX = x + (right ? 0 : -1);
-            const wallY = Math.floor(y);
+    // Initialize step and initial sideDist
+    if (rayDirX < 0) {
+        stepX = -1;
+        sideDistX = (startX - mapX) * deltaDistX;
+    } else {
+        stepX = 1;
+        sideDistX = (mapX + 1 - startX) * deltaDistX;
+    }
+    if (rayDirY < 0) {
+        stepY = -1;
+        sideDistY = (startY - mapY) * deltaDistY;
+    } else {
+        stepY = 1;
+        sideDistY = (mapY + 1 - startY) * deltaDistY;
+    }
 
-            if (gameState.current.map[wallY][wallX] > 0) {
-                const distX = x - startX;
-                const distY = y - startY;
-                distance = Math.min(distance, distX * distX + distY * distY);
-                break;
-            }
-            x += dXVer;
-            y += dYVer;
+    // DDA
+    let hit = false;
+    let side;
+    for (let i = 0; i < MAX_RENDER_DISTANCE; i++) {
+        if (sideDistX < sideDistY) {
+            sideDistX += deltaDistX;
+            mapX += stepX;
+            side = 0;
+        } else {
+            sideDistY += deltaDistY;
+            mapY += stepY;
+            side = 1;
+        }
+        if (mapX < 0 || mapX >= gameState.current.mapWidth ||
+            mapY < 0 || mapY >= gameState.current.mapHeight) break;
+        if (gameState.current.map[mapY][mapX] > 0) {
+            hit = true;
+            break;
         }
     }
 
-    // Horizontal cast
-    {
-        const slopeHor = angleCos / angleSin;
-        const dYHor = up ? -1 : 1;
-        const dXHor = dYHor * slopeHor;
-        let y = up ? Math.floor(startY) : Math.ceil(startY);
-        let x = startX + (y - startY) * slopeHor;
-
-        while (x >= 0 && x < gameState.current.mapWidth && y >= 0 && y < gameState.current.mapHeight) {
-            const wallY = y + (up ? -1 : 0);
-            const wallX = Math.floor(x);
-
-            if (gameState.current.map[wallY][wallX] > 0) {
-                const distX = x - startX;
-                const distY = y - startY;
-                const blockDist = distX * distX + distY * distY;
-                distance = Math.min(distance, blockDist);
-                break;
-            }
-            x += dXHor;
-            y += dYHor;
-        }
-    }
-
-    return Math.sqrt(distance);
+    if (!hit) return Infinity;
+    const dist = side === 0
+        ? (mapX - startX + (1 - stepX) / 2) / rayDirX
+        : (mapY - startY + (1 - stepY) / 2) / rayDirY;
+    return Math.min(dist, MAX_RENDER_DISTANCE);
 }
 
 export function initScreen(screenRef) {

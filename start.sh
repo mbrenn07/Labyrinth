@@ -1,0 +1,1 @@
+(cd backend || exit; python -m flask --app server run) & (cd unnerving-maze || exit; npm start)
