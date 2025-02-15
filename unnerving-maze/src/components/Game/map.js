@@ -67,9 +67,9 @@ export function updateMap(gameState, minimapRef, objectsRef) {
 export function isBlocking(x, y, gameState) {
     if (y < 0 || y >= gameState.current.mapHeight || x < 0 || x >= gameState.current.mapWidth)
         return true;
-    if (map[y >> 0][x >> 0] !== 0)
+    if (gameState.current.map[y][x] !== 0)
         return true;
-    if (gameState.current.spritePosition[y >> 0]?.[x >> 0]?.block)
+    if (gameState.current.spritePosition[y]?.[x]?.block)
         return true;
     return false;
 }

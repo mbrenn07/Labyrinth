@@ -4,12 +4,12 @@ import { isBlocking } from './map';
 const BASE_MOVE_SPEED = 2.5; // Units per second
 const ROTATION_SPEED = 2; // Radians per second
 const COLLISION_RADIUS = 0.35;
-const SUBSTEPS = 5; // Increased collision checks per frame
+const SUBSTEPS = 1; // Increased collision checks per frame
 
 export function initPlayer() {
     return {
-        x: 10.5,
-        y: 4.5,
+        x: 10,
+        y: 2.5,
         rotation: 0,
         velocity: { x: 0, y: 0 }, // Add velocity tracking
         moveSpeed: 0.075,
@@ -26,88 +26,150 @@ export function initPlayer() {
 
 export function move(gameState, deltaTime) {
     const { player } = gameState.current;
-    const seconds = deltaTime / 1000; // Convert ms to seconds
+    const seconds = deltaTime / 1000;
 
-    // Reset rotation first
-    let rotationDelta = 0;
-    if (player.input.left) rotationDelta -= ROTATION_SPEED * seconds;
-    if (player.input.right) rotationDelta += ROTATION_SPEED * seconds;
-    player.rotation += rotationDelta;
+    // Update rotation first
+    if (player.input.left) player.rotation -= ROTATION_SPEED * seconds;
+    if (player.input.right) player.rotation += ROTATION_SPEED * seconds;
 
-    // Calculate movement direction
-    let moveDeltaX = 0;
-    let moveDeltaY = 0;
-    const moveSpeed = BASE_MOVE_SPEED * seconds;
+    // Calculate movement vector
+    let moveX = 0;
+    let moveY = 0;
 
-    if (player.input.forward) {
-        moveDeltaX += Math.cos(player.rotation) * moveSpeed;
-        moveDeltaY += Math.sin(player.rotation) * moveSpeed;
-    }
-    if (player.input.backward) {
-        moveDeltaX -= Math.cos(player.rotation) * moveSpeed;
-        moveDeltaY -= Math.sin(player.rotation) * moveSpeed;
+    if (player.input.forward || player.input.backward) {
+        const direction = player.input.forward ? 1 : -1;
+        moveX = Math.cos(player.rotation) * direction * BASE_MOVE_SPEED * seconds;
+        moveY = Math.sin(player.rotation) * direction * BASE_MOVE_SPEED * seconds;
     }
 
-    // Apply movement if any
-    if (moveDeltaX !== 0 || moveDeltaY !== 0) {
-        const newPos = resolveCollision(
-            player.x,
-            player.y,
-            player.x + moveDeltaX,
-            player.y + moveDeltaY,
-            COLLISION_RADIUS,
-            gameState
-        );
+    // Try X and Y movements separately to allow sliding along walls
+    let newX = player.x;
+    let newY = player.y;
 
-        player.x = newPos.x;
-        player.y = newPos.y;
+    // Try X movement
+    const xPos = checkCollision(
+        player.x,
+        player.y,
+        player.x + moveX,
+        player.y,
+        .35,
+        gameState
+    );
+
+    // Try Y movement
+    const yPos = checkCollision(
+        player.x,
+        player.y,
+        player.x,
+        player.y + moveY,
+        .35,
+        gameState
+    );
+
+    // Apply successful movements
+    if (xPos.x !== player.x) {
+        newX = xPos.x;
     }
-}
+    if (yPos.y !== player.y) {
+        newY = yPos.y;
+    }
 
-function lerp(a, b, t) {
-    return a + (b - a) * t;
-}
+    // Final collision check with combined movement
+    const finalPos = checkCollision(
+        player.x,
+        player.y,
+        newX,
+        newY,
+        .35,
+        gameState
+    );
 
-function resolveCollision(fromX, fromY, toX, toY, radius, gameState) {
-    // Simple immediate collision check
-    const collision = checkCollision(fromX, fromY, toX, toY, radius, gameState);
-    return collision;
+    player.x = finalPos.x;
+    player.y = finalPos.y;
 }
 
 export function checkCollision(fromX, fromY, toX, toY, radius, gameState) {
+    const position = {
+        x: fromX,
+        y: fromY
+    };
 
-    // First check if target position is valid
-    if (isBlocking(Math.floor(toX), Math.floor(toY), gameState)) {
-        return { x: fromX, y: fromY };
+    const mapHeight = gameState.current.mapHeight;
+    const mapWidth = gameState.current.mapWidth;
+
+    // Boundary check
+    if (toY < 0 || toY >= mapHeight || toX < 0 || toX >= mapWidth) {
+        return position;
     }
 
-    // Simple radius check for adjacent cells
-    const directions = [
-        { x: 0, y: -1 }, // up
-        { x: 0, y: 1 },  // down
-        { x: -1, y: 0 }, // left
-        { x: 1, y: 0 }   // right
-    ];
+    const blockX = Math.floor(toX);
+    const blockY = Math.floor(toY);
 
-    for (const dir of directions) {
-        const checkX = Math.floor(toX + dir.x);
-        const checkY = Math.floor(toY + dir.y);
+    // Early exit if trying to move into a wall
+    if (isBlocking(blockX, blockY, gameState)) {
+        return position;
+    }
 
-        if (isBlocking(checkX, checkY, gameState)) {
-            const dx = toX - (checkX + 0.5);
-            const dy = toY - (checkY + 0.5);
-            const distance = Math.sqrt(dx * dx + dy * dy);
+    // Initialize with target position
+    position.x = toX;
+    position.y = toY;
 
-            if (distance < radius + 0.5) {
-                return { x: fromX, y: fromY };
-            }
+    // Check adjacent blocks
+    const top = isBlocking(blockX, blockY - 1, gameState);
+    const bottom = isBlocking(blockX, blockY + 1, gameState);
+    const left = isBlocking(blockX - 1, blockY, gameState);
+    const right = isBlocking(blockX + 1, blockY, gameState);
+
+    // Add a small buffer to prevent getting too close to walls
+    const WALL_BUFFER = 0.001;
+
+    // Handle straight wall collisions
+    if (top && toY - blockY < radius) {
+        position.y = blockY + radius + WALL_BUFFER;
+    }
+    if (bottom && blockY + 1 - toY < radius) {
+        position.y = blockY + 1 - radius - WALL_BUFFER;
+    }
+    if (left && toX - blockX < radius) {
+        position.x = blockX + radius + WALL_BUFFER;
+    }
+    if (right && blockX + 1 - toX < radius) {
+        position.x = blockX + 1 - radius - WALL_BUFFER;
+    }
+
+    // Handle corner collisions with smoother transitions
+    const handleCorner = (cornerX, cornerY, isBlocked) => {
+        if (!isBlocked) return;
+
+        const dx = toX - cornerX;
+        const dy = toY - cornerY;
+        const distSquared = dx * dx + dy * dy;
+
+        if (distSquared < radius * radius) {
+            const dist = Math.sqrt(distSquared);
+            // Add small buffer to prevent sticking
+            const scale = (radius + WALL_BUFFER) / Math.max(dist, 0.0001);
+
+            position.x = cornerX + dx * scale;
+            position.y = cornerY + dy * scale;
         }
+    };
+
+    // Check corners only if we're not already colliding with adjacent walls
+    if (isBlocking(blockX - 1, blockY - 1, gameState) && !(top && left)) {
+        handleCorner(blockX, blockY, true);
+    }
+    if (isBlocking(blockX + 1, blockY - 1, gameState) && !(top && right)) {
+        handleCorner(blockX + 1, blockY, true);
+    }
+    if (isBlocking(blockX - 1, blockY + 1, gameState) && !(bottom && left)) {
+        handleCorner(blockX, blockY + 1, true);
+    }
+    if (isBlocking(blockX + 1, blockY + 1, gameState) && !(bottom && right)) {
+        handleCorner(blockX + 1, blockY + 1, true);
     }
 
-    return { x: toX, y: toY };
-}
-function clamp(value, min, max) {
-    return Math.max(min, Math.min(value, max));
+    return position;
 }
 
 export function addKeys(gameState) {
