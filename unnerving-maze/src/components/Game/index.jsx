@@ -60,26 +60,54 @@ export default function Game() {
 
     }, []);
 
+    const Ceiling = () => (
+        <div
+            ref={ceilingRef}
+            id="ceiling"
+            style={{
+                position: 'absolute',
+                width: '100%',
+                height: '50%',
+                backgroundImage: 'url("/assets/ceiling.jpg")',
+                pointerEvents: 'none'
+            }}
+        />
+    );
+
+    const Floor = () => (
+        <div
+            id="floor"
+            style={{
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(to bottom, #000 50%, #42301c 100%)'
+            }}
+        />
+    );
+
     return (
         <div>
             <div id="screen" ref={screenRef} style={{
                 width: '1024px',
                 height: '768px',
                 position: 'relative',
-                overflow: 'hidden'
-            }} />
-            <div id="map" style={{ position: 'fixed', top: 20, left: 20 }}>
-                <canvas ref={minimapRef} />
-                <canvas ref={objectsRef} />
+                overflow: 'hidden',
+                border: '1px solid black',
+                margin: 'auto'
+            }}>
+                <Floor />
+                <Ceiling ceilingRef={ceilingRef} />
+                <div id="map" style={{
+                    position: 'fixed',
+                    top: '10px',
+                    left: '10px',
+                    zIndex: 99999,
+                }}>
+                    <canvas ref={minimapRef} />
+                    <canvas ref={objectsRef} />
+                </div>
             </div>
-            <div id="ceiling" ref={ceilingRef} style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '50%',
-                pointerEvents: 'none'
-            }} />
         </div>
     );
 }

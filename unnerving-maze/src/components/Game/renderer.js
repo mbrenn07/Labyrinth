@@ -172,7 +172,6 @@ function castRay(rayAngle, stripIdx, gameState) {
 
 export function updateBackground(gameState, ceilingRef) {
     if (ceilingRef.current) {
-        ceilingRef.current.style.transform =
-            `translateX(${-200 * gameState.current.player.rotation}px)`;
+        ceilingRef.current.style.backgroundPosition = -200 * gameState.current.player.rotation + "px " + "100%";
     }
 }

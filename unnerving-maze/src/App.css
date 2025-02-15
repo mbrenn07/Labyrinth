@@ -8,3 +8,14 @@
   image-rendering: crisp-edges !important;
   image-rendering: pixelated !important;
 }
+
+body {
+  background: linear-gradient(to bottom,
+      #69532f 0%,
+      #a3772e 22%,
+      #835019 62%,
+      #5e3a11 100%);
+  margin: 0;
+  overflow: hidden;
+  user-select: none;
+}
