@@ -1,16 +1,29 @@
-export const screenWidth = 1024;
-export const screenHeight = 768;
+export let screenWidth = window.innerWidth;
+export let screenHeight = window.innerHeight;
 export const stripWidth = 2;
 export const fov = 80 * Math.PI / 180;
-export const viewDist = (screenWidth / 2) / Math.tan(fov / 2);
-export const numofrays = Math.ceil(screenWidth / stripWidth);
+export let viewDist = (screenWidth / 2) / Math.tan(fov / 2);
+export let numofrays = Math.ceil(screenWidth / stripWidth);
 export const numoftex = 3;
 
 let screenStrips = [];
 
+// Add function to update screen dimensions
+export function setScreenDimensions(width, height) {
+    screenWidth = width;
+    screenHeight = height;
+    viewDist = (screenWidth / 2) / Math.tan(fov / 2);
+    numofrays = Math.ceil(screenWidth / stripWidth);
+}
+
 export function initScreen(screenRef) {
+    // Clear existing strips
+    screenStrips.forEach(strip => strip.remove());
     screenStrips = [];
+
     const screen = screenRef.current;
+    if (!screen) return;
+
     screen.style.height = `${screenHeight}px`;
     screen.style.width = `${screenWidth}px`;
 

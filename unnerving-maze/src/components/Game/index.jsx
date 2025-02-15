@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { initScreen, castRays, updateBackground } from './renderer';
+import React, { useEffect, useRef, useState } from 'react';
+import { initScreen, castRays, updateBackground, setScreenDimensions } from './renderer';
 import { move, initPlayer, addKeys } from './player';
 import { drawMap, updateMap } from './map';
 import { initSprites, clearSprites, renderSprites } from './sprites';
@@ -10,6 +10,10 @@ export default function Game() {
     const minimapRef = useRef(null);
     const objectsRef = useRef(null);
     const ceilingRef = useRef(null);
+    const [dimensions, setDimensions] = useState({
+        width: window.innerWidth,
+        height: window.innerHeight
+    });
 
     // Game state refs
     const gameState = useRef({
@@ -21,6 +25,23 @@ export default function Game() {
     });
 
     useEffect(() => {
+        const handleResize = () => {
+            setDimensions({
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+            // Update renderer dimensions
+            setScreenDimensions(window.innerWidth, window.innerHeight);
+            // Reinitialize screen with new dimensions
+            initScreen(screenRef, minimapRef, objectsRef, ceilingRef);
+        };
+
+        // Initial setup
+        handleResize();
+
+        // Add resize listener
+        window.addEventListener('resize', handleResize);
+
         // Initialize game
         initScreen(screenRef, minimapRef, objectsRef, ceilingRef);
         initSprites(gameState, screenRef);
@@ -56,6 +77,7 @@ export default function Game() {
             cancelAnimationFrame(animationFrameId);
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
+            window.removeEventListener('resize', handleResize);
         };
 
     }, []);
@@ -87,17 +109,22 @@ export default function Game() {
     );
 
     return (
-        <div>
+        <div style={{
+            width: '100vw',
+            height: '100vh',
+            overflow: 'hidden',
+            position: 'fixed',
+            top: 0,
+            left: 0
+        }}>
             <div id="screen" ref={screenRef} style={{
-                width: '1024px',
-                height: '768px',
+                width: '100%',
+                height: '100%',
                 position: 'relative',
-                overflow: 'hidden',
-                border: '1px solid black',
-                margin: 'auto'
+                overflow: 'hidden'
             }}>
                 <Floor />
-                <Ceiling ceilingRef={ceilingRef} />
+                <Ceiling />
                 <div id="map" style={{
                     position: 'fixed',
                     top: '10px',
