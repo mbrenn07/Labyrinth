@@ -45,19 +45,21 @@ export function initScreen(screenRef) {
 }
 
 export function castRays(gameState) {
-    let stripIdx = 0;
+    requestAnimationFrame(() => {
+        let stripIdx = 0;
 
-    for (let i = 0; i < numofrays; i++) {
-        const rayScreenPos = (-numofrays / 2 + i) * stripWidth;
-        const rayViewDist = Math.sqrt(rayScreenPos * rayScreenPos + viewDist * viewDist);
-        const rayAngle = Math.asin(rayScreenPos / rayViewDist);
+        for (let i = 0; i < numofrays; i++) {
+            const rayScreenPos = (-numofrays / 2 + i) * stripWidth;
+            const rayViewDist = Math.sqrt(rayScreenPos * rayScreenPos + viewDist * viewDist);
+            const rayAngle = Math.asin(rayScreenPos / rayViewDist);
 
-        castRay(
-            gameState.current.player.rotation + rayAngle,
-            stripIdx++,
-            gameState
-        );
-    }
+            castRay(
+                gameState.current.player.rotation + rayAngle,
+                stripIdx++,
+                gameState
+            );
+        }
+    });
 }
 
 function castRay(rayAngle, stripIdx, gameState) {
@@ -130,7 +132,6 @@ function castRay(rayAngle, stripIdx, gameState) {
     }
 
     if (distance) {
-
         const strip = screenStrips[stripIdx];
         distance = Math.sqrt(distance);
         distance *= Math.cos(gameState.current.player.rotation - rayAngle);
@@ -143,39 +144,35 @@ function castRay(rayAngle, stripIdx, gameState) {
         if (texX > width - stripWidth) texX = width - stripWidth;
         texX += shadow ? width : 0;
 
-        // Update strip styles
+        // Batch DOM updates using transform instead of individual style properties
+        strip.style.transform = `translateY(${top}px)`;
         strip.style.height = `${height}px`;
-        strip.style.top = `${top}px`;
-        strip.style.zIndex = Math.floor(height);
 
         const img = strip.img;
+        // Use transform for image positioning instead of left property
+        img.style.transform = `translateX(${-texX}px)`;
+
+        // Only update these if they've changed
         if (img.prevStyle.height !== Math.floor(height * numoftex)) {
             img.style.height = `${Math.floor(height * numoftex)}px`;
             img.prevStyle.height = Math.floor(height * numoftex);
         }
-
         if (img.prevStyle.width !== Math.floor(width * 2)) {
             img.style.width = `${Math.floor(width * 2)}px`;
             img.prevStyle.width = Math.floor(width * 2);
         }
 
-        if (img.prevStyle.left !== -texX) {
-            img.style.left = `${-texX}px`;
-            img.prevStyle.left = -texX;
-        }
-
+        // Use opacity instead of rgba for better performance
         strip.fog.style.height = `${Math.floor(height)}px`;
         strip.fog.style.width = `${Math.floor(width * 2)}px`;
         strip.fog.style.background = `rgba(0,0,0,${Math.min(distance / 10, 0.8)})`;
-    } else {
-        const strip = screenStrips[stripIdx];
-        strip.style.background = 'red'; // or any debug color
+
     }
 }
 
 export function updateBackground(gameState, ceilingRef) {
     if (ceilingRef.current) {
-        ceilingRef.current.style.backgroundPosition =
-            `${-200 * gameState.current.player.rotation}px 100%`;
+        ceilingRef.current.style.transform =
+            `translateX(${-200 * gameState.current.player.rotation}px)`;
     }
 }
