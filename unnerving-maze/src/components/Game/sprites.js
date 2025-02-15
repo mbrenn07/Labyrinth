@@ -16,8 +16,8 @@ export function initSprites(gameState, screenRef) {
     // Example NPC path
     const examplePath = [
         [10, 3.5],
-        [9, 3.5],
-        [9, 2.5],
+        // [9, 3.5],
+        // [9, 2.5],
     ];
 
     // Create an NPC
@@ -32,7 +32,8 @@ export function initSprites(gameState, screenRef) {
             x: npc.x,
             y: npc.y,
             isNPC: true,
-            npcRef: npc // Reference to NPC object
+            npcRef: npc, // Reference to NPC object
+            prevStyle: {}
         });
     });
 
@@ -106,9 +107,7 @@ export function renderSprites(gameState) {
 
         // Only process sprites within field of view
         if (Math.abs(spriteAngle) < fov / 1.5) {
-            const size = sprite.isNPC ?
-                (viewDist / (Math.cos(spriteAngle) * distance)) * 1.5 :
-                viewDist / (Math.cos(spriteAngle) * distance);
+            const size = viewDist / (Math.cos(spriteAngle) * distance);
 
             const xPos = Math.tan(spriteAngle) * viewDist;
             const screenX = (screenWidth / 2 + xPos - size / 2);
@@ -148,30 +147,41 @@ export function renderSprites(gameState) {
 
             if (sprite.visible) {
                 const img = sprite.img;
-                img.style.display = "block";
-                img.style.left = `${screenX}px`;
-                img.style.top = `${(screenHeight - size) / 2}px`;
-                img.style.width = `${size}px`;
-                img.style.height = `${size}px`;
-                img.style.filter = `brightness(${100 - 15 * distance}%)`;
-                img.style.zIndex = `${Math.floor(size)}`;
+                const prevStyle = sprite.prevStyle || {};
 
-                // Create or update clip path for partial visibility
-                if (visibilityStrips.length > 0) {
-                    let clipPath = 'polygon(';
-                    const spriteWidth = size;
-                    const stripPercent = (stripWidth / spriteWidth) * 100;
+                img.style.display = 'block';
 
-                    visibilityStrips.forEach((strip, index) => {
-                        const leftPercent = ((strip - leftStrip) * stripWidth / size) * 100;
-                        clipPath += `${leftPercent}% 0%, ${leftPercent + stripPercent}% 0%, ${leftPercent + stripPercent}% 100%, ${leftPercent}% 100%${index < visibilityStrips.length - 1 ? ',' : ''}`;
-                    });
+                // Assign z-index based on distance (closer sprites have higher z-index)
+                const zIndex = Math.floor(1000 - distance * 10); // Adjust the multiplier as needed
+                img.style.zIndex = zIndex;
 
-                    clipPath += ')';
-                    img.style.clipPath = clipPath;
-                } else {
-                    img.style.clipPath = 'none';
+                // Only update styles if they have changed
+                if (size !== prevStyle.height) {
+                    img.style.height = `${size}px`;
+                    prevStyle.height = size;
                 }
+                if ((size * (sprite.numOfStates || 1)) !== prevStyle.width) {
+                    img.style.width = `${size * (sprite.numOfStates || 1)}px`;
+                    prevStyle.width = size * (sprite.numOfStates || 1);
+                }
+                if (((screenHeight - size) / 2) !== prevStyle.top) {
+                    img.style.top = `${(screenHeight - size) / 2}px`;
+                    prevStyle.top = (screenHeight - size) / 2;
+                }
+                if ((screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)) !== prevStyle.left) {
+                    img.style.left = `${screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)}px`;
+                    prevStyle.left = screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0);
+                }
+                if (`brightness(${100 - 15 * distance}%)` !== prevStyle.filter) {
+                    img.style.filter = `brightness(${100 - 15 * distance}%)`;
+                    prevStyle.filter = `brightness(${100 - 15 * distance}%)`;
+                }
+                if ('block' !== prevStyle.display) {
+                    img.style.display = 'block';
+                    prevStyle.display = 'block';
+                }
+
+                sprite.prevStyle = prevStyle;
             } else {
                 sprite.img.style.display = "none";
             }

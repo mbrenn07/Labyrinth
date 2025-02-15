@@ -229,6 +229,10 @@ function castRay(rayAngle, stripIdx, gameState) {
         if (texX > width - stripWidth) texX = width - stripWidth;
         texX += shadow ? width : 0;
 
+        // Assign z-index based on distance (closer walls have higher z-index)
+        const zIndex = Math.floor(1000 - distance * 10); // Adjust the multiplier as needed
+        strip.style.zIndex = zIndex;
+
         // Batch DOM updates using transform instead of individual style properties
         strip.style.transform = `translateY(${top}px)`;
         strip.style.height = `${height}px`;
