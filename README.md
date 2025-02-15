@@ -19,9 +19,9 @@ Technique was used in Wolfenstain 3D. Some effects was added by me.
 
 ## Game appearance
 
-<p align="center"><img title="game screen" src="https://github.com/okkindel/Labirynth/blob/master/src/assets/screens/screen.png?raw=true" width="60%"></p>
+<p align="center"><img title="game screen" src="https://github.com/okkindel/Labirynth/blob/master/assets/screens/screen.png?raw=true" width="60%"></p>
 
-<p align="center"><img title="game screen" src="https://github.com/okkindel/Labirynth/blob/master/src/assets/screens/screen2.png?raw=true" width="60%"></p>
+<p align="center"><img title="game screen" src="https://github.com/okkindel/Labirynth/blob/master/assets/screens/screen2.png?raw=true" width="60%"></p>
 
 ## Live example
 

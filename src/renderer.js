@@ -13,7 +13,7 @@ function initScreen() {
         strip.style.overflow = "hidden";
 
         var img = new Image();
-        img.src = ("src/assets/walls.png");
+        img.src = ("assets/walls.png");
         img.style.position = "absolute";
         img.prevStyle = {
             height: 0,

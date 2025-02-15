@@ -1,0 +1,10 @@
+#screen {
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  backface-visibility: hidden;
+}
+
+#screen img {
+  image-rendering: crisp-edges !important;
+  image-rendering: pixelated !important;
+}

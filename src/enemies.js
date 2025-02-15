@@ -41,7 +41,7 @@ var mapEnemies = [];
 
 var enemyTypes = [
     {
-        img: 'src/assets/rat.png',
+        img: 'assets/rat.png',
         moveSpeed: 0.05,
         rotSpeed: 3,
         numOfStates: 9

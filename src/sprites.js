@@ -29,7 +29,7 @@ var sprites = [];
 var mapSprites = [];
 var spritePosition = [];
 var itemTypes = [
-    { img: 'src/assets/bush.png', block: false },
+    { img: 'assets/bush.png', block: false },
 ];
 
 //----------------------------------------------------------
