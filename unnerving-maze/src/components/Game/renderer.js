@@ -16,6 +16,17 @@ export function setScreenDimensions(width, height) {
     numofrays = Math.ceil(screenWidth / stripWidth);
 }
 
+export function isPointVisible(startX, startY, targetX, targetY, gameState) {
+    const dx = targetX - startX;
+    const dy = targetY - startY;
+    const angle = Math.atan2(dy, dx);
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    const wallDist = distToWall(startX, startY, angle, gameState);
+
+    return distance < wallDist || Math.abs(distance - wallDist) < 0.1;
+}
+
 export function distToWall(startX, startY, rayAngle, gameState) {
     rayAngle %= Math.PI * 2;
     if (rayAngle < 0) rayAngle += Math.PI * 2;
