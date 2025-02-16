@@ -3,11 +3,13 @@ from pymongo.server_api import ServerApi
 from dotenv import load_dotenv
 import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from datetime import datetime, timedelta
 
 
 load_dotenv()
 app = Flask(__name__)
+cors = CORS(app)
 
 uri = os.getenv("MONGO_URI")
 # Create a new client and connect to the server
