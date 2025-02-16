@@ -15,17 +15,27 @@ const AudioRecorder = () => {
     const [volumeData, setVolumeData] = useState([]);
     const [tooLoud, setTooLoud] = useState(false);
     const [timeLeft, setTimeLeft] = useState(3);
+    const [audioBase64, setAudioBase64] = useState(null);
 
     const mediaRecorder = useRef(null);
     const audioContext = useRef(null);
     const analyzer = useRef(null);
     const startTime = useRef(null);
+    const audioChunks = useRef([]);
 
     const WHISPER_THRESHOLD = -20; // dB threshold for whisper
 
     useEffect(() => {
-
-    }, [isRecording]);
+        // Cleanup on unmount
+        return () => {
+            if (mediaRecorder.current) {
+                mediaRecorder.current.stop();
+            }
+            if (audioContext.current) {
+                audioContext.current.close();
+            }
+        };
+    }, []);
 
     const startRecording = async () => {
         try {
@@ -40,6 +50,20 @@ const AudioRecorder = () => {
 
             // Set up MediaRecorder
             mediaRecorder.current = new MediaRecorder(stream);
+            mediaRecorder.current.ondataavailable = (event) => {
+                audioChunks.current.push(event.data);
+            };
+            mediaRecorder.current.onstop = () => {
+                const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
+                audioChunks.current = [];
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64data = reader.result.split(',')[1];
+                    setAudioBase64(base64data);
+                };
+                reader.readAsDataURL(audioBlob);
+            };
+
             mediaRecorder.current.start();
 
             setIsRecording(true);
@@ -59,7 +83,6 @@ const AudioRecorder = () => {
     };
 
     const monitorVolume = () => {
-
         const dataArray = new Uint8Array(analyzer.current.frequencyBinCount);
         analyzer.current.getByteFrequencyData(dataArray);
 
@@ -90,7 +113,7 @@ const AudioRecorder = () => {
             if (audioContext.current) {
                 audioContext.current.close();
             }
-            setIsRecording(false)
+            setIsRecording(false);
         }
     };
 
@@ -164,9 +187,19 @@ const AudioRecorder = () => {
                     </ResponsiveContainer>
                 </div>
             )}
+
+            {audioBase64 && (
+                <div>
+                    <h3>Recorded Audio (Base64):</h3>
+                    <textarea
+                        readOnly
+                        value={audioBase64}
+                        style={{ width: '100%', height: '100px' }}
+                    />
+                </div>
+            )}
         </div>
     );
 };
-
 
 export default AudioRecorder;
