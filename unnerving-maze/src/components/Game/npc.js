@@ -17,8 +17,6 @@ export class NPC {
         this.moveProgress = 0;
         this.startX = startX;
         this.startY = startY;
-
-        console.log('NPC Created at:', startX, startY); // Debug log
     }
 
     update(currentTime) {
@@ -37,7 +35,6 @@ export class NPC {
                 this.x = this.targetX;
                 this.y = this.targetY;
                 this.lastMoveTime = currentTime;
-                console.log('NPC reached point:', this.x, this.y); // Debug log
             }
         } else if (currentTime - this.lastMoveTime >= this.moveInterval) {
             // Start moving to next point
@@ -59,6 +56,5 @@ export class NPC {
         this.isMoving = true;
         this.moveProgress = 0;
         this.lastMoveTime = performance.now();
-        console.log('NPC moving to:', this.targetX, this.targetY); // Debug log
     }
 }

@@ -39,7 +39,6 @@ function EmotionDetector() {
         const video = videoRef.current;
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
-        console.log({ width: videoRef.current.videoWidth, height: videoRef.current.videoHeight })
         setVideoSize({ width: videoRef.current.videoWidth, height: videoRef.current.videoHeight })
 
 

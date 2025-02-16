@@ -8,8 +8,8 @@ const SUBSTEPS = 1; // Increased collision checks per frame
 
 export function initPlayer() {
     return {
-        x: 10,
-        y: 11.5,
+        x: 1,
+        y: 1,
         rotation: 0,
         velocity: { x: 0, y: 0 }, // Add velocity tracking
         moveSpeed: 0.075,

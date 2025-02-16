@@ -169,7 +169,7 @@ function castRay(rayAngle, stripIdx, gameState) {
         wallX = x + (right ? 0 : -1);
         wallY = Math.floor(y);
 
-        if (gameState.current.map[wallY][wallX] > 0) {
+        if (gameState.current.map[wallY][wallX] === 1) {
             const distX = x - gameState.current.player.x;
             const distY = y - gameState.current.player.y;
             distance = distX * distX + distY * distY;
@@ -195,7 +195,7 @@ function castRay(rayAngle, stripIdx, gameState) {
         wallY = y + (up ? -1 : 0);
         wallX = Math.floor(x);
 
-        if (gameState.current.map[wallY][wallX] > 0) {
+        if (gameState.current.map[wallY][wallX] === 1) {
             const distX = x - gameState.current.player.x;
             const distY = y - gameState.current.player.y;
             const blockDist = distX * distX + distY * distY;

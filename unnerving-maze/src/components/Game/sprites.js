@@ -1,7 +1,7 @@
 
 // Import map from your map.js component
 import { map } from './map';
-import { screenWidth, screenHeight, viewDist, isPointVisible, fov, stripWidth, numofrays, distToWall } from './renderer';
+import { screenWidth, screenHeight, viewDist, fov } from './renderer';
 import { NPC } from './npc';
 
 export const itemTypes = [
@@ -15,8 +15,8 @@ export function initSprites(gameState, screenRef) {
     gameState.current.npcs = [];
     // Example NPC path
     const examplePath = [
-        [10, 11],
-        [9, 11],
+        [1, 1],
+        [2, 1],
         // [9, 2.5],
     ];
 
@@ -25,6 +25,7 @@ export function initSprites(gameState, screenRef) {
     gameState.current.npcs.push(npc);
 
     addItems(gameState);
+    //console.log(gameState.current.mapSprites)
 
     gameState.current.npcs.forEach(npc => {
         gameState.current.mapSprites.push({
@@ -48,7 +49,6 @@ export function initSprites(gameState, screenRef) {
 
         const spriteObj = {
             ...sprite,
-            visible: false,
             block: type.block,
             img
         };
@@ -64,9 +64,11 @@ export function initSprites(gameState, screenRef) {
 }
 
 function addItems(gameState) {
-    for (let y = 0; y < gameState.current.mapHeight; y++) {
-        for (let x = 0; x < gameState.current.mapWidth; x++) {
-            if (map[y][x] === 0 && Math.random() * 100 < 2) {
+    for (let y = 0; y < map.length; y++) {
+        for (let x = 0; x < map[0].length; x++) {
+            if (map[y][x] === 2) {
+                console.log("hi")
+
                 gameState.current.mapSprites.push({
                     type: 0,
                     x: x,
@@ -75,6 +77,7 @@ function addItems(gameState) {
             }
         }
     }
+
 }
 
 export function clearSprites(gameState) {
@@ -110,81 +113,43 @@ export function renderSprites(gameState) {
             const size = viewDist / (Math.cos(spriteAngle) * distance);
 
             const xPos = Math.tan(spriteAngle) * viewDist;
-            const screenX = (screenWidth / 2 + xPos - size / 2);
 
-            // Calculate the sprite's screen position in strips
-            const leftStrip = Math.floor(screenX / stripWidth);
-            const rightStrip = Math.floor((screenX + size) / stripWidth);
+            const img = sprite.img;
+            const prevStyle = sprite.prevStyle || {};
 
-            let isVisible = false;
-            const visibilityStrips = [];
+            img.style.display = 'block';
 
-            // Check visibility for each vertical strip of the sprite
-            for (let strip = leftStrip; strip <= rightStrip; strip++) {
-                if (strip < 0 || strip >= numofrays) continue;
+            // Assign z-index based on distance (closer sprites have higher z-index)
+            const zIndex = Math.floor(1000 - distance * 10); // Adjust the multiplier as needed
+            img.style.zIndex = zIndex;
 
-                // Calculate the ray angle for this strip
-                const rayScreenPos = (-numofrays / 2 + strip) * stripWidth;
-                const rayViewDist = Math.sqrt(rayScreenPos * rayScreenPos + viewDist * viewDist);
-                const rayAngle = Math.asin(rayScreenPos / rayViewDist) + gameState.current.player.rotation;
-
-                // Get wall distance for this strip
-                const wallDist = distToWall(
-                    gameState.current.player.x,
-                    gameState.current.player.y,
-                    rayAngle,
-                    gameState
-                );
-
-                // If sprite is closer than wall, this strip is visible
-                if (distance < wallDist) {
-                    isVisible = true;
-                    visibilityStrips.push(strip);
-                }
+            // Only update styles if they have changed
+            if (size !== prevStyle.height) {
+                img.style.height = `${size}px`;
+                prevStyle.height = size;
             }
-
-            sprite.visible = isVisible;
-
-            if (sprite.visible) {
-                const img = sprite.img;
-                const prevStyle = sprite.prevStyle || {};
-
+            if ((size * (sprite.numOfStates || 1)) !== prevStyle.width) {
+                img.style.width = `${size * (sprite.numOfStates || 1)}px`;
+                prevStyle.width = size * (sprite.numOfStates || 1);
+            }
+            if (((screenHeight - size) / 2) !== prevStyle.top) {
+                img.style.top = `${(screenHeight - size) / 2}px`;
+                prevStyle.top = (screenHeight - size) / 2;
+            }
+            if ((screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)) !== prevStyle.left) {
+                img.style.left = `${screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)}px`;
+                prevStyle.left = screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0);
+            }
+            if (`brightness(${100 - 15 * distance}%)` !== prevStyle.filter) {
+                img.style.filter = `brightness(${100 - 15 * distance}%)`;
+                prevStyle.filter = `brightness(${100 - 15 * distance}%)`;
+            }
+            if ('block' !== prevStyle.display) {
                 img.style.display = 'block';
-
-                // Assign z-index based on distance (closer sprites have higher z-index)
-                const zIndex = Math.floor(1000 - distance * 10); // Adjust the multiplier as needed
-                img.style.zIndex = zIndex;
-
-                // Only update styles if they have changed
-                if (size !== prevStyle.height) {
-                    img.style.height = `${size}px`;
-                    prevStyle.height = size;
-                }
-                if ((size * (sprite.numOfStates || 1)) !== prevStyle.width) {
-                    img.style.width = `${size * (sprite.numOfStates || 1)}px`;
-                    prevStyle.width = size * (sprite.numOfStates || 1);
-                }
-                if (((screenHeight - size) / 2) !== prevStyle.top) {
-                    img.style.top = `${(screenHeight - size) / 2}px`;
-                    prevStyle.top = (screenHeight - size) / 2;
-                }
-                if ((screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)) !== prevStyle.left) {
-                    img.style.left = `${screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)}px`;
-                    prevStyle.left = screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0);
-                }
-                if (`brightness(${100 - 15 * distance}%)` !== prevStyle.filter) {
-                    img.style.filter = `brightness(${100 - 15 * distance}%)`;
-                    prevStyle.filter = `brightness(${100 - 15 * distance}%)`;
-                }
-                if ('block' !== prevStyle.display) {
-                    img.style.display = 'block';
-                    prevStyle.display = 'block';
-                }
-
-                sprite.prevStyle = prevStyle;
-            } else {
-                sprite.img.style.display = "none";
+                prevStyle.display = 'block';
             }
+
+            sprite.prevStyle = prevStyle;
         } else {
             sprite.visible = false;
             sprite.img.style.display = "none";
