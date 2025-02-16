@@ -5,9 +5,11 @@
   "dependencies": {
     "cra-template": "1.2.0",
     "face-api.js": "^0.22.2",
+    "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "recharts": "^2.15.1"
   },
   "scripts": {
     "start": "react-scripts start",
