@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Square, AlertTriangle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+    ResponsiveContainer,
+    ReferenceLine,
+    Bar,
+    YAxis,
+    Cell,
+    Tooltip,
+    ComposedChart
+} from 'recharts';
 
 const AudioRecorder = () => {
     const [isRecording, setIsRecording] = useState(false);
@@ -41,6 +49,10 @@ const AudioRecorder = () => {
 
             // Start volume monitoring
             requestAnimationFrame(monitorVolume);
+
+            setTimeout(() => {
+                stopRecording();
+            }, 3000);
         } catch (err) {
             console.error('Error accessing microphone:', err);
         }
@@ -57,6 +69,8 @@ const AudioRecorder = () => {
 
         const timestamp = (Date.now() - startTime.current) / 1000;
 
+        if (timestamp > 3) return;
+
         setVolumeData(prev => [...prev, {
             time: timestamp,
             volume: Math.max(db, -100)
@@ -70,13 +84,13 @@ const AudioRecorder = () => {
     };
 
     const stopRecording = () => {
-        if (mediaRecorder.current && isRecording) {
+        if (mediaRecorder.current) {
             mediaRecorder.current.stop();
             mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
             if (audioContext.current) {
                 audioContext.current.close();
             }
-            setIsRecording(false);
+            setIsRecording(false)
         }
     };
 
@@ -111,8 +125,13 @@ const AudioRecorder = () => {
                     height: '400px',
                 }}>
                     <ResponsiveContainer>
-                        <LineChart
-                            data={volumeData}
+                        <ComposedChart
+                            data={volumeData.map((item) => {
+                                return {
+                                    time: item.time,
+                                    volume: Math.max(100 - Math.abs(item.volume), 40)
+                                }
+                            })}
                             margin={{
                                 top: 20,
                                 right: 30,
@@ -120,27 +139,28 @@ const AudioRecorder = () => {
                                 bottom: 20,
                             }}
                         >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                                dataKey="time"
-                                label={{ value: 'Time (seconds)', position: 'bottom' }}
-                            />
                             <YAxis
-                                label={{ value: 'Volume (dB)', angle: -90, position: 'left' }}
-                                domain={[-100, 0]}
+                                domain={[40, 100]}
+                                scale={"log"}
+                                hide
                             />
                             <Tooltip
                                 formatter={(value) => [`${value.toFixed(2)} dB`, 'Volume']}
                                 labelFormatter={(value) => `Time: ${value}s`}
                             />
-                            <Line
-                                type="monotone"
-                                dataKey="volume"
-                                stroke="#2563eb"
+                            <ReferenceLine
+                                y={80} // Draw a horizontal line at y = -40
+                                stroke="red"
                                 strokeWidth={2}
-                                dot={false}
                             />
-                        </LineChart>
+                            <Bar
+                                dataKey="volume"
+                            >
+                                {volumeData.map((entry) => (
+                                    <Cell key={entry.time} fill={entry.volume > WHISPER_THRESHOLD ? 'red' : 'green'} />
+                                ))}
+                            </Bar>
+                        </ComposedChart>
                     </ResponsiveContainer>
                 </div>
             )}
