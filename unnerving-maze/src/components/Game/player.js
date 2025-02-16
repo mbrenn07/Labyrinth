@@ -86,6 +86,9 @@ export function move(gameState, deltaTime) {
 
     player.x = finalPos.x;
     player.y = finalPos.y;
+
+    // Check for sprite collisions
+    checkSpriteCollisions(gameState); // Add this line
 }
 
 export function checkCollision(fromX, fromY, toX, toY, radius, gameState) {
@@ -170,6 +173,45 @@ export function checkCollision(fromX, fromY, toX, toY, radius, gameState) {
     }
 
     return position;
+}
+
+function checkSpriteCollisions(gameState) {
+    const { player } = gameState.current;
+    const COLLISION_RADIUS = 0.35;
+
+    gameState.current.sprites.forEach(sprite => {
+        if (sprite.type === 1 && !sprite.collected) { // Type 1 is the item
+            const spriteCenterX = sprite.x + 0.5;
+            const spriteCenterY = sprite.y + 0.5;
+            const dx = spriteCenterX - player.x;
+            const dy = spriteCenterY - player.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < COLLISION_RADIUS) {
+                handlePickup(sprite, gameState);
+            }
+        }
+    });
+}
+
+function handlePickup(sprite, gameState) {
+    // Mark sprite as collected
+    sprite.collected = true;
+
+    // Remove from mapSprites
+    const mapIndex = gameState.current.mapSprites.findIndex(s => s === sprite);
+    if (mapIndex !== -1) gameState.current.mapSprites.splice(mapIndex, 1);
+
+    // Remove from sprites array and DOM
+    const spriteIndex = gameState.current.sprites.findIndex(s => s === sprite);
+    if (spriteIndex !== -1) {
+        const [removed] = gameState.current.sprites.splice(spriteIndex, 1);
+        removed.img.remove();
+        delete gameState.current.spritePosition[removed.y][removed.x];
+    }
+
+    // Add custom logic here (e.g., update score)
+    console.log("Item picked up!");
 }
 
 export function addKeys(gameState) {

@@ -6,6 +6,7 @@ import { NPC } from './npc';
 
 export const itemTypes = [
     { img: 'assets/bush.png', block: false },
+    { img: 'assets/cassette.png', block: false },
 ];
 
 export function initSprites(gameState, screenRef) {
@@ -70,7 +71,7 @@ function addItems(gameState) {
                 console.log("hi")
 
                 gameState.current.mapSprites.push({
-                    type: 0,
+                    type: 1,
                     x: x,
                     y: y
                 });
