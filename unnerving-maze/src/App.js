@@ -7,7 +7,7 @@ import AudioRecording from "./components/AudioRecording/AudioRecording"
 
 const App = () => {
   return (
-    <AudioRecording />
+    <FacialDetection />
   );
 };
 
