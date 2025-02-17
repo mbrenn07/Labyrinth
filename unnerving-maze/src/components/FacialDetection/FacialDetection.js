@@ -16,8 +16,8 @@ function EmotionDetector() {
     useEffect(() => {
         async function initialize() {
             try {
-                await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-                await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+                await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+                await faceapi.nets.faceExpressionNet.loadFromUri('./models');
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: videoSize
                 });
