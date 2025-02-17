@@ -3,54 +3,63 @@
 import { map } from './map';
 import { screenWidth, screenHeight, viewDist, fov } from './renderer';
 import { NPC } from './npc';
+import axios from 'axios';
 
 export const itemTypes = [
     { img: 'assets/bush.png', block: false },
     { img: 'assets/cassette.png', block: false },
 ];
 
-export function initSprites(gameState, screenRef) {
+const instance = axios.create({
+    baseURL: "https://labyrinth-backend-1095352764453.us-east4.run.app",
+    timeout: undefined,
+});
+
+export async function initSprites(gameState, screenRef) {
     gameState.current.mapSprites = [];
     gameState.current.spritePosition = Array.from({ length: gameState.current.mapHeight }, () => []);
 
     gameState.current.npcs = [];
-    // Example NPC path
-    const examplePath = [
-        [1, 1],
-        [2, 1],
-        // [9, 2.5],
-    ];
-
-    // Create an NPC
-    const npc = new NPC(examplePath[0][0], examplePath[0][1], examplePath);
-    gameState.current.npcs.push(npc);
 
     addItems(gameState);
-    //console.log(gameState.current.mapSprites)
 
-    gameState.current.npcs.forEach(npc => {
+    const data = await instance.get("/players/random")
+    data.data.forEach((player) => {
+        const path = JSON.parse(player.path).map((pathItem) => [parseFloat(pathItem.x), parseFloat(pathItem.y)])
+        const npc = new NPC(path[0][0], path[0][1], path);
+        gameState.current.npcs.push(npc);
         gameState.current.mapSprites.push({
-            type: 0, // NPC sprite type
+            block: false,
+            img: player.picture,
             x: npc.x,
             y: npc.y,
             isNPC: true,
             npcRef: npc, // Reference to NPC object
             prevStyle: {}
         });
-    });
+    })
 
     const screen = screenRef.current;
     gameState.current.sprites = gameState.current.mapSprites.map(sprite => {
-        const type = itemTypes[sprite.type];
+        let type = ""
+        let block = false
         const img = new Image();
-        img.src = type.img;
+
+        if (sprite.type !== undefined) {
+            type = itemTypes[sprite.type];
+            block = type.block
+            img.src = type.img
+        } else {
+            img.src = sprite.img;
+            block = sprite.block
+        }
         img.style.display = "none";
         img.style.position = "absolute";
         img.style.overflow = "hidden";
 
         const spriteObj = {
             ...sprite,
-            block: type.block,
+            block: block,
             img
         };
 
@@ -62,14 +71,13 @@ export function initSprites(gameState, screenRef) {
 
         return spriteObj;
     });
+
 }
 
 function addItems(gameState) {
     for (let y = 0; y < map.length; y++) {
         for (let x = 0; x < map[0].length; x++) {
             if (map[y][x] === 2) {
-                console.log("hi")
-
                 gameState.current.mapSprites.push({
                     type: 1,
                     x: x,

@@ -89,6 +89,8 @@ export function move(gameState, deltaTime) {
     player.x = finalPos.x;
     player.y = finalPos.y;
 
+    console.log(player.x + "," + player.y)
+
     // Check for sprite collisions
     checkSpriteCollisions(gameState); // Add this line
 }

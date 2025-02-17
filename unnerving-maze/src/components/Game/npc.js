@@ -5,7 +5,7 @@ export class NPC {
         this.path = path;
         this.currentPathIndex = 0;
         this.lastMoveTime = performance.now();
-        this.moveInterval = 1000; // 1 second between moves
+        this.moveInterval = 100; // 1 second between moves
         this.speed = 1; // Units per second for smooth movement
 
         // Current target position

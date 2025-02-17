@@ -89,7 +89,7 @@ export default function Game() {
             if (gameState.current?.player) {
                 gameState.current.player.path.push({ x: gameState.current.player.x.toFixed(2), y: gameState.current.player.y.toFixed(2) })
             }
-        }, 500)
+        }, 100)
 
         return () => {
             clearInterval(samplePlayerPosition)
