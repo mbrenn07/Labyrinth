@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import "./facialDetection.css";
+import { useNavigate } from "react-router-dom";
 
 function EmotionDetector() {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [emotions, setEmotions] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [capturedImage, setCapturedImage] = useState(null);
     const [videoSize, setVideoSize] = useState({ width: 640, height: 480 })
+
+    const navigate = useNavigate();
 
     // Load models and initialize webcam
     useEffect(() => {
@@ -36,6 +38,8 @@ function EmotionDetector() {
     }, []);
 
     const captureFaceImage = (detection) => {
+        if (videoRef.current === null) return;
+
         const video = videoRef.current;
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -79,7 +83,8 @@ function EmotionDetector() {
 
         // Convert to base64 and store
         const base64Image = canvas.toDataURL('image/png');
-        setCapturedImage(base64Image);
+        localStorage.setItem("picture", base64Image)
+        navigate("/game")
     };
 
     const detectEmotions = async () => {
@@ -90,7 +95,7 @@ function EmotionDetector() {
         faceapi.matchDimensions(canvas, displaySize);
 
         setInterval(async () => {
-            if (videoRef.current.readyState !== 4) return;
+            if (videoRef.current === null || videoRef.current.readyState !== 4) return;
 
             // Get raw detections (not resized)
             const detections = await faceapi.detectAllFaces(

@@ -14,6 +14,8 @@ export function initPlayer() {
         velocity: { x: 0, y: 0 }, // Add velocity tracking
         moveSpeed: 0.075,
         rotationSpeed: 5,
+        path: [],
+        spritesCollected: 0,
         input: {
             forward: false,
             backward: false,
@@ -197,6 +199,7 @@ function checkSpriteCollisions(gameState) {
 function handlePickup(sprite, gameState) {
     // Mark sprite as collected
     sprite.collected = true;
+    gameState.current.player.spritesCollected++
 
     // Remove from mapSprites
     const mapIndex = gameState.current.mapSprites.findIndex(s => s === sprite);
@@ -210,8 +213,11 @@ function handlePickup(sprite, gameState) {
         delete gameState.current.spritePosition[removed.y][removed.x];
     }
 
-    // Add custom logic here (e.g., update score)
-    console.log("Item picked up!");
+    if (gameState.current.player.spritesCollected >= 3) {
+        localStorage.setItem("path", JSON.stringify(gameState.current.player.path))
+        gameState.current.completed = true
+    }
+
 }
 
 export function addKeys(gameState) {

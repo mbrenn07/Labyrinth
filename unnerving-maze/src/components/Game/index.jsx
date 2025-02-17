@@ -1,23 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { initScreen, castRays, updateBackground, setScreenDimensions } from './renderer';
 import { move, initPlayer, addKeys } from './player';
-import { drawMap, updateMap } from './map';
+import { drawMap, updateMap, map } from './map';
 import { initSprites, clearSprites, renderSprites } from './sprites';
-import { map } from "./map"
+import { useNavigate } from "react-router-dom";
 
 export default function Game() {
     const screenRef = useRef(null);
     const minimapRef = useRef(null);
     const objectsRef = useRef(null);
     const ceilingRef = useRef(null);
-    const [dimensions, setDimensions] = useState({
-        width: window.innerWidth,
-        height: window.innerHeight
-    });
+
+    const navigate = useNavigate();
 
     // Game state refs
     const gameState = useRef({
         player: initPlayer(),
+        completed: false,
         sprites: [],
         spritePosition: [],
         map: map,
@@ -26,10 +25,6 @@ export default function Game() {
 
     useEffect(() => {
         const handleResize = () => {
-            setDimensions({
-                width: window.innerWidth,
-                height: window.innerHeight
-            });
             // Update renderer dimensions
             setScreenDimensions(window.innerWidth, window.innerHeight);
             // Reinitialize screen with new dimensions
@@ -76,6 +71,10 @@ export default function Game() {
             renderSprites(gameState);
             updateBackground(gameState, ceilingRef);
 
+            if (gameState.current.completed) {
+                navigate("/audio")
+            }
+
             animationFrameId = requestAnimationFrame(gameLoop);
         };
 
@@ -86,7 +85,14 @@ export default function Game() {
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
 
+        const samplePlayerPosition = setInterval(() => {
+            if (gameState.current?.player) {
+                gameState.current.player.path.push({ x: gameState.current.player.x.toFixed(2), y: gameState.current.player.y.toFixed(2) })
+            }
+        }, 500)
+
         return () => {
+            clearInterval(samplePlayerPosition)
             cancelAnimationFrame(animationFrameId);
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);

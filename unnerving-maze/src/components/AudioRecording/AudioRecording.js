@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, AlertTriangle } from 'lucide-react';
+import { Mic, Square } from 'lucide-react';
+import axios from 'axios';
 import {
     ResponsiveContainer,
     ReferenceLine,
@@ -15,7 +16,6 @@ const AudioRecorder = () => {
     const [volumeData, setVolumeData] = useState([]);
     const [tooLoud, setTooLoud] = useState(false);
     const [timeLeft, setTimeLeft] = useState(3);
-    const [audioBase64, setAudioBase64] = useState(null);
 
     const mediaRecorder = useRef(null);
     const audioContext = useRef(null);
@@ -24,6 +24,11 @@ const AudioRecorder = () => {
     const audioChunks = useRef([]);
 
     const WHISPER_THRESHOLD = -20; // dB threshold for whisper
+
+    const instance = axios.create({
+        baseURL: "https://labyrinth-backend-1095352764453.us-east4.run.app",
+        timeout: undefined,
+    });
 
     useEffect(() => {
         // Cleanup on unmount
@@ -59,7 +64,11 @@ const AudioRecorder = () => {
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     const base64data = reader.result.split(',')[1];
-                    setAudioBase64(base64data);
+                    instance.post("/player", {
+                        "picture": localStorage.getItem("picture"),
+                        "path": localStorage.getItem("path"),
+                        "sound": base64data
+                    })
                 };
                 reader.readAsDataURL(audioBlob);
             };
@@ -185,17 +194,6 @@ const AudioRecorder = () => {
                             </Bar>
                         </ComposedChart>
                     </ResponsiveContainer>
-                </div>
-            )}
-
-            {audioBase64 && (
-                <div>
-                    <h3>Recorded Audio (Base64):</h3>
-                    <textarea
-                        readOnly
-                        value={audioBase64}
-                        style={{ width: '100%', height: '100px' }}
-                    />
                 </div>
             )}
         </div>

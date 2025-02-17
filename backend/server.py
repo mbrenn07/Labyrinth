@@ -69,16 +69,6 @@ def create_player():
     if not data or 'picture' not in data or 'path' not in data or 'sound' not in data:
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Validate path structure
-    if not isinstance(data['path'], list):
-        return jsonify({"error": "Path must be a list"}), 400
-
-    for point in data['path']:
-        if not isinstance(point, dict) or 'x' not in point or 'y' not in point:
-            return jsonify({"error": "Invalid path point structure"}), 400
-        if not isinstance(point['x'], (int, float)) or not isinstance(point['y'], (int, float)):
-            return jsonify({"error": "Path coordinates must be numbers"}), 400
-
     try:
         # Insert the player document into MongoDB
         players_collection.insert_one({
