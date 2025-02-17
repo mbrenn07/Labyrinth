@@ -2,14 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import {
-  createBrowserRouter,
+  createHashRouter,
   RouterProvider,
 } from "react-router-dom";
 import Game from "./components/Game"
 import FacialDetection from "./components/FacialDetection/FacialDetection"
 import AudioRecording from "./components/AudioRecording/AudioRecording"
 
-const router = createBrowserRouter([
+const router = createHashRouter([
   {
     path: "/",
     element: <FacialDetection />,
@@ -22,6 +22,11 @@ const router = createBrowserRouter([
     path: "audio",
     element: <AudioRecording />,
   },
+  {
+    path: "/models/*",
+    element: null
+  }
+
 ]);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
