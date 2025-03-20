@@ -20,7 +20,8 @@ export default function Game() {
         sprites: [],
         spritePosition: [],
         map: map,
-        keys: {}
+        keys: {},
+        initTime: 0,
     });
 
     useEffect(() => {

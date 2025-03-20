@@ -1,15 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Volume2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Box, Typography } from "@mui/material"
+import axios from "axios"
 
 const WhisperDetector = () => {
   const [status, setStatus] = useState('idle'); // idle, calibrating, recording, processing, success, error
-  const [message, setMessage] = useState('Click to start recording');
   const [progress, setProgress] = useState(0);
   
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
   const backgroundNoiseLevel = useRef(0);
   const userAudioChunks = useRef([]);
+
+  const instance = axios.create({
+    baseURL: "https://labyrinth-backend-1095352764453.us-east4.run.app",
+    timeout: undefined,
+});
 
   useEffect(() => {
     getBackground().then(() => {
@@ -32,10 +37,6 @@ const WhisperDetector = () => {
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
         
-        // First record background noise
-        setStatus('calibrating');
-        setMessage('Recording background noise...');
-        
         // Measure background noise for 1 second
         await new Promise(resolve => {
           const intervalId = setInterval(() => {
@@ -53,8 +54,6 @@ const WhisperDetector = () => {
         });
     } catch (error) {
         console.error('Error accessing microphone:', error);
-        setStatus('error');
-        setMessage('Error accessing microphone. Please check permissions.');
       }
   }
   
@@ -75,7 +74,6 @@ const WhisperDetector = () => {
       
       // Now record the user
       setStatus('recording');
-      setMessage('Now whisper something...');
       
       // Create a new MediaRecorder for the user's audio
       mediaRecorderRef.current = new MediaRecorder(stream);
@@ -110,18 +108,15 @@ const WhisperDetector = () => {
       
       // Stop recording
       mediaRecorderRef.current.stop();
-      setStatus('processing');
-      setMessage('Processing your audio...');
       
     } catch (error) {
       console.error('Error accessing microphone:', error);
-      setStatus('error');
-      setMessage('Error accessing microphone. Please check permissions.');
     }
   };
   
   const processAudio = async () => {
     try {
+    setStatus("playback")
       // Create a blob from the recorded chunks
       const audioBlob = new Blob(userAudioChunks.current, { type: 'audio/webm' });
       
@@ -133,7 +128,7 @@ const WhisperDetector = () => {
       const source = audioContext.createMediaElementSource(audioElement);
       const analyser = audioContext.createAnalyser();
       source.connect(analyser);
-      analyser.connect(audioContext.destination);
+      //analyser.connect(audioContext.destination);
       
       analyser.fftSize = 256;
       const bufferLength = analyser.frequencyBinCount;
@@ -151,24 +146,19 @@ const WhisperDetector = () => {
         
         if (audioElement.ended) {
           // Compare with background noise
-          const threshold = backgroundNoiseLevel.current * 1.5; // Allow 50% louder than background
-          
+          const threshold = backgroundNoiseLevel.current * 1.25; // Allow 50% louder than background
           if (maxUserVolume > threshold) {
             // User spoke too loudly
             setStatus('loud');
             setTimeout(() => {
-                if (mediaRecorderRef.current) {
-                    mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-                  }
+                resetRecording()
                 startRecording()
-              }, 1000); 
-            setMessage('You spoke too loudly. Please whisper more quietly.');
+              }, 3000); 
           } else {
             // Success - user whispered appropriately
             setStatus('success');
-            setMessage('Perfect whisper! Processing your request...');
             // Call your function here
-            handleSuccessfulWhisper();
+            handleSuccessfulWhisper(audioBlob);
           }
         } else {
           requestAnimationFrame(checkAudio);
@@ -179,88 +169,68 @@ const WhisperDetector = () => {
       
     } catch (error) {
       console.error('Error processing audio:', error);
-      setStatus('error');
-      setMessage('Error processing audio.');
     }
   };
   
-  const handleSuccessfulWhisper = () => {
-    // This is the function that would be called when the whisper is successful
-    console.log('Whisper detected successfully - calling your function');
-    // Replace with your actual function call
+  const handleSuccessfulWhisper = async (audioBlob) => {
+    const blobToBase64 = (blob) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => resolve(reader.result.split(',')[1]); // Get base64 part
+            reader.onerror = reject;
+        });
+    };
+
+    const base64Audio = await blobToBase64(audioBlob);
+
+    instance.post("/player", {
+        "picture": localStorage.getItem("picture"),
+        "path": localStorage.getItem("path"),
+        "sound": base64Audio
+    })
   };
   
   const resetRecording = () => {
-    setStatus('idle');
-    setMessage('Click to start recording');
     setProgress(0);
-    backgroundNoiseLevel.current = 0;
     userAudioChunks.current = [];
   };
+
+  const getBackgroundColor = () => {
+    if (status === "recording") {
+        return "grey"
+    } else if (status === "loud") {
+        return "red"
+    } else if (status === "success") {
+        return "green"
+    } else if (status === "playback") {
+        return "darkgrey"
+    }  else {
+        return "black";
+    }
+  }
+
+  const getEmoji = () => {
+    if (status === "recording") {
+        return "👂"
+    } else if (status === "loud") {
+        return "🤫"
+    } else if (status === "success") {
+        return "✅"
+    } else if (status === "playback") {
+        return "🤔"
+    }  else {
+        return "🤐";
+    }
+  }
+
   
   return (
-    <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg shadow-md max-w-md mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Whisper Detector</h2>
-      
-      <div className="w-full mb-6 bg-gray-200 rounded-full h-2.5">
-        <div 
-          className={`h-2.5 rounded-full ${status === 'error' ? 'bg-red-500' : 'bg-blue-500'}`}
-          style={{ width: `${progress}%` }}
-        ></div>
-      </div>
-      
-      <div className="flex items-center justify-center w-24 h-24 rounded-full mb-4">
-        {status === 'idle' && (
-          <button 
-            onClick={startRecording}
-            className="w-full h-full flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-full"
-          >
-            <Mic size={36} />
-          </button>
-        )}
-        
-        {status === 'calibrating' && (
-          <div className="w-full h-full flex items-center justify-center bg-yellow-100 text-yellow-700 rounded-full animate-pulse">
-            <Volume2 size={36} />
-          </div>
-        )}
-        
-        {status === 'recording' && (
-          <div className="w-full h-full flex items-center justify-center bg-red-100 text-red-700 rounded-full animate-pulse">
-            <Mic size={36} />
-          </div>
-        )}
-        
-        {status === 'processing' && (
-          <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-700 rounded-full">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-          </div>
-        )}
-        
-        {status === 'error' && (
-          <div className="w-full h-full flex items-center justify-center bg-red-100 text-red-700 rounded-full">
-            <AlertCircle size={36} />
-          </div>
-        )}
-        
-        {status === 'success' && (
-          <div className="w-full h-full flex items-center justify-center bg-green-100 text-green-700 rounded-full">
-            <CheckCircle size={36} />
-          </div>
-        )}
-      </div>
-      
-      <p className="text-center mb-4">{message}</p>
-      
-      {(status === 'error' || status === 'success') && (
-        <button 
-          onClick={resetRecording}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
-        >
-          Try Again
-        </button>
-      )}
-    </div>
+    <Box sx={{backgroundColor: getBackgroundColor(), width: "100vw", height: "100vh"}}>
+        <Box sx={{ position: "relative", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "fit-content"}}>
+            <Typography sx={{fontSize: 200}}>{getEmoji()}</Typography>
+        </Box>
+    </Box>
   );
 };
 

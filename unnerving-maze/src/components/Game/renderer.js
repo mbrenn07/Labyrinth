@@ -155,7 +155,6 @@ function castRay(rayAngle, stripIdx, gameState) {
     const angleCos = Math.cos(rayAngle);
 
     let distance = 0;
-    let xHit = 0, yHit = 0;
     let textureX, wallX, wallY, shadow;
 
     // Vertical cast
@@ -175,8 +174,6 @@ function castRay(rayAngle, stripIdx, gameState) {
             distance = distX * distX + distY * distY;
             textureX = y % 1;
             if (!right) textureX = 1 - textureX;
-            xHit = x;
-            yHit = y;
             shadow = true;
             break;
         }
@@ -204,8 +201,6 @@ function castRay(rayAngle, stripIdx, gameState) {
                 distance = blockDist;
                 textureX = x % 1;
                 if (up) textureX = 1 - textureX;
-                xHit = x;
-                yHit = y;
                 shadow = true;
             }
             break;

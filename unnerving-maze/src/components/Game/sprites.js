@@ -15,6 +15,7 @@ const instance = axios.create({
     timeout: undefined,
 });
 
+
 async function createCompositeDoll(faceUrl) {
     return new Promise((resolve, reject) => {
         const dollImg = new Image();
@@ -76,6 +77,7 @@ async function createCompositeDoll(faceUrl) {
 
 
 export async function initSprites(gameState, screenRef) {
+    gameState.current.initTime = Date.now();
     gameState.current.mapSprites = [];
     gameState.current.spritePosition = Array.from({ length: gameState.current.mapHeight }, () => []);
 
@@ -84,25 +86,28 @@ export async function initSprites(gameState, screenRef) {
     addItems(gameState);
 
     const data = await instance.get("/players/random")
+    data.data = [data.data[2]]
     data.data.forEach((player) => {
-        const path = JSON.parse(player.path).map((pathItem) => {
+        //if I want higher quality paths, i need better collision logic
+        let path = JSON.parse(player.path).map((pathItem) => {
             let pathX = parseFloat(pathItem.x)
             let pathY = parseFloat(pathItem.y)
 
+            const trimPath = (pathDimension) => {
+                const pathInt = Math.trunc(pathDimension)
+                let precisePath = pathDimension - pathInt
+                if (precisePath > .3 && precisePath <= .5) {
+                    precisePath = .3
+                } else if (precisePath > .5 && precisePath < .7) {
+                    precisePath = .7
+                }
+                return pathInt + precisePath
+            }
 
-            const pathYInt = parseInt(pathItem.y)
-            let preciseY = pathY - pathYInt
-            preciseY = Math.max(preciseY, .6)
-            preciseY = Math.min(preciseY, .3)
-            pathY = pathYInt + preciseY
-
-            const pathXInt = parseInt(pathItem.x)
-            let preciseX = pathX - pathXInt
-            preciseX = Math.max(preciseX, .6)
-            preciseX = Math.min(preciseX, .3)
-            pathX = pathXInt + preciseX
-
-            return [pathX, pathY]
+            //anything above .6 is bad, anything below .4 is bad
+            //.6 - 1.4 is ok
+            //bad zone: 1.4 - 1.6
+            return [trimPath(pathX), trimPath(pathY)]
 
         })
         const npc = new NPC(path[0][0], path[0][1], path);
@@ -198,7 +203,13 @@ export function renderSprites(gameState) {
         return (dxb * dxb + dyb * dyb) - (dxa * dxa + dya * dya);
     });
 
-    gameState.current.sprites.forEach(sprite => {
+    for (let spriteIndex in gameState.current.sprites) {
+        const sprite = gameState.current.sprites[spriteIndex]
+        const SECONDS_BEFORE_VISIBLE = 30
+        if (sprite.isNPC && Date.now() - gameState.current.initTime <= SECONDS_BEFORE_VISIBLE * 1000) {
+            continue
+        }
+
         const dx = sprite.x + 0.5 - gameState.current.player.x;
         const dy = sprite.y + 0.5 - gameState.current.player.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -267,5 +278,5 @@ export function renderSprites(gameState) {
             sprite.visible = false;
             sprite.img.style.display = "none";
         }
-    });
+    }
 }
