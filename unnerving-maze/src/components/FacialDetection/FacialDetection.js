@@ -7,9 +7,8 @@ import { Stack, Box, Typography } from "@mui/material"
 function EmotionDetector() {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
-    const [emotions, setEmotions] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [videoSize, setVideoSize] = useState({ width: 640, height: 480 })
+    const [emotionRatio, setEmotionRatio] = useState(1)
     //const [capturedImage, setCapturedImage] = useState(null); // New state for captured image
 
     const navigate = useNavigate();
@@ -24,11 +23,9 @@ function EmotionDetector() {
                     video: videoSize
                 });
                 videoRef.current.srcObject = stream;
-                setLoading(false);
                 detectEmotions();
             } catch (error) {
                 console.error('Error initializing:', error);
-                setLoading(false);
             }
         }
         initialize();
@@ -136,38 +133,37 @@ function EmotionDetector() {
 
             if (detections.length > 0) {
                 const currentEmotions = detections[0].expressions;
-                setEmotions(currentEmotions);
                 console.log(currentEmotions)
 
-                if (currentEmotions.angry > 0.8) {
+                if (currentEmotions.fearful > 0.8) {
+                    setEmotionRatio((99 * Math.min(Math.round(currentEmotions.fearful * 100), 80)) / 80 + 1)
                     captureFaceImage(detections[0]); // Pass raw detection, not resized
                 }
-            } else {
-                setEmotions(null);
             }
         }, 500);
     };
 
     return (
-        <div className="container">
-            <Stack direction="row" alignItems="center" justifyContent="space-evenly">
-            <Typography sx={{fontSize: 100}}>😠</Typography>
-            <div className="video-container">
-                <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    style={videoSize}
-                />
-                <canvas
-                    ref={canvasRef}
-                    style={{ position: 'absolute', left: 0, top: 0, width: videoSize.width, height: videoSize.height }}
-                />
-            </div>
-            <Typography sx={{fontSize: 100}}>😨</Typography>
+        <Box sx={{ height: "100vh", width: "100vw" }}>
+            <Box sx={{ height: "100%", width: `${emotionRatio}%`, backgroundColor: "blue", zIndex: -1, position: "absolute" }} />
+            <Stack direction="row" alignItems="center" justifyContent="space-evenly" sx={{ height: "100%" }}>
+                <Typography sx={{ fontSize: 100 }}>😐</Typography>
+                <div className="video-container">
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={videoSize}
+                    />
+                    <canvas
+                        ref={canvasRef}
+                        style={{ position: 'absolute', left: 0, top: 0, width: videoSize.width, height: videoSize.height }}
+                    />
+                </div>
+                <Typography sx={{ fontSize: 100 }}>😨</Typography>
             </Stack>
-           
+
             {/* Display the captured image for debugging */}
             {/* {capturedImage && (
                 <div className="debug-image-container">
@@ -179,7 +175,7 @@ function EmotionDetector() {
                     />
                 </div>
             )} */}
-        </div>
+        </Box>
     );
 }
 

@@ -86,7 +86,6 @@ export async function initSprites(gameState, screenRef) {
     addItems(gameState);
 
     const data = await instance.get("/players/random")
-    data.data = [data.data[2]]
     data.data.forEach((player) => {
         //if I want higher quality paths, i need better collision logic
         let path = JSON.parse(player.path).map((pathItem) => {
