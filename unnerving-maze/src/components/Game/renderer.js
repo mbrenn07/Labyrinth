@@ -104,7 +104,7 @@ export function setGameStateAndScreenRef(gameState, screenRef) {
 // Function to start random lightning
 function startRandomLightning() {
     // Initial random delay between 30-60 seconds
-    const initialDelay = 5000//Math.floor(Math.random() * 30000) + 60000;
+    const initialDelay = Math.floor(Math.random() * 30000) + 60000;
 
     setTimeout(triggerRandomLightning, initialDelay);
 }

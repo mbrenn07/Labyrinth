@@ -217,6 +217,12 @@ function handlePickup(sprite, gameState) {
     if (gameState.current.player.spritesCollected >= 3) {
         localStorage.setItem("path", JSON.stringify(gameState.current.player.path))
         gameState.current.completed = true
+    } else {
+        const pickupSound = new Audio('assets/pick-up.mp3');
+        pickupSound.volume = 0.5; // Optional: adjust volume (0.0 to 1.0)
+        pickupSound.play().catch(error => {
+            console.error('Failed to play pickup sound:', error);
+        });
     }
 
 }
