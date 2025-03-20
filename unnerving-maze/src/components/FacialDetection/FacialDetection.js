@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import "./facialDetection.css";
 import { useNavigate } from "react-router-dom";
+import { Stack, Box, Typography } from "@mui/material"
 
 function EmotionDetector() {
     const videoRef = useRef(null);
@@ -136,6 +137,7 @@ function EmotionDetector() {
             if (detections.length > 0) {
                 const currentEmotions = detections[0].expressions;
                 setEmotions(currentEmotions);
+                console.log(currentEmotions)
 
                 if (currentEmotions.angry > 0.8) {
                     captureFaceImage(detections[0]); // Pass raw detection, not resized
@@ -148,6 +150,8 @@ function EmotionDetector() {
 
     return (
         <div className="container">
+            <Stack direction="row" alignItems="center" justifyContent="space-evenly">
+            <Typography sx={{fontSize: 100}}>😠</Typography>
             <div className="video-container">
                 <video
                     ref={videoRef}
@@ -161,21 +165,9 @@ function EmotionDetector() {
                     style={{ position: 'absolute', left: 0, top: 0, width: videoSize.width, height: videoSize.height }}
                 />
             </div>
-
-            {emotions && (
-                <div className="emotion-results">
-                    <div className="emotion-bar">
-                        <div className="meter">
-                            <div
-                                style={{
-                                    width: `${emotions.angry * 100}%`,
-                                    backgroundColor: '#ff4444'
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
+            <Typography sx={{fontSize: 100}}>😨</Typography>
+            </Stack>
+           
             {/* Display the captured image for debugging */}
             {/* {capturedImage && (
                 <div className="debug-image-container">
