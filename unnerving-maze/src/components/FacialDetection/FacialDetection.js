@@ -133,7 +133,6 @@ function EmotionDetector() {
 
             if (detections.length > 0) {
                 const currentEmotions = detections[0].expressions;
-                console.log(currentEmotions)
 
                 if (currentEmotions.fearful > 0.8) {
                     setEmotionRatio((99 * Math.min(Math.round(currentEmotions.fearful * 100), 80)) / 80 + 1)

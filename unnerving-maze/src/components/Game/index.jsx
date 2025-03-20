@@ -38,8 +38,6 @@ export default function Game() {
         // Add resize listener
         window.addEventListener('resize', handleResize);
 
-        // Initialize game
-        initScreen(screenRef, minimapRef, objectsRef, ceilingRef);
         initSprites(gameState, screenRef);
         drawMap(gameState, minimapRef, objectsRef);
 
@@ -90,7 +88,7 @@ export default function Game() {
             if (gameState.current?.player) {
                 gameState.current.player.path.push({ x: gameState.current.player.x.toFixed(2), y: gameState.current.player.y.toFixed(2) })
             }
-        }, 100)
+        }, 1)
 
         return () => {
             clearInterval(samplePlayerPosition)

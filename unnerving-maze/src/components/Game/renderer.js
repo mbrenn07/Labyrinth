@@ -1,3 +1,6 @@
+// Import refreshNPCsOnLightning from sprites.js
+import { refreshNPCsOnLightning } from './sprites';
+
 export let screenWidth = window.innerWidth;
 export let screenHeight = window.innerHeight;
 export const stripWidth = 2;
@@ -7,6 +10,12 @@ export let numofrays = Math.ceil(screenWidth / stripWidth);
 export const numoftex = 3;
 export const MAX_RENDER_DISTANCE = 0; // Reduce if possible
 
+// Lightning effect parameters
+let lightningActive = false;
+let lightningIntensity = 0;
+let lightningFadeSpeed = 0.05;
+let gameStateRef = null;
+let screenRefGlobal = null;
 
 let screenStrips = [];
 
@@ -86,6 +95,69 @@ export function distToWall(startX, startY, rayAngle, gameState) {
     return Math.min(dist, MAX_RENDER_DISTANCE);
 }
 
+// Store gameState and screenRef for lightning effects
+export function setGameStateAndScreenRef(gameState, screenRef) {
+    gameStateRef = gameState;
+    screenRefGlobal = screenRef;
+}
+
+// Function to start random lightning
+function startRandomLightning() {
+    // Initial random delay between 30-60 seconds
+    const initialDelay = 5000//Math.floor(Math.random() * 30000) + 60000;
+
+    setTimeout(triggerRandomLightning, initialDelay);
+}
+
+// Function to trigger lightning and schedule the next one
+function triggerRandomLightning() {
+    // Create lightning with random intensity
+    const intensity = 1; // Between 0.7 and 1.0
+    const fadeSpeed = 0.01 + (Math.random() * 0.02); // Between 0.03 and 0.05
+
+    // Trigger the lightning effect
+    createLightning(intensity, fadeSpeed);
+
+    // Calculate thunder delay based on "distance" - between .5 - 2.5 seconds
+    const thunderDelay = Math.floor(Math.random() * 2000) + 500;
+
+    // Play thunder sound after the delay
+    setTimeout(() => {
+        playThunderSound(thunderDelay);
+
+        // Refresh NPCs after thunder when lightning is at peak intensity
+        if (gameStateRef && screenRefGlobal) {
+            refreshNPCsOnLightning(gameStateRef, screenRefGlobal);
+        }
+    }, thunderDelay);
+
+    // Schedule the next lightning (30-60 seconds)
+    const nextDelay = Math.floor(Math.random() * 30000) + 60000;
+    setTimeout(triggerRandomLightning, nextDelay);
+}
+
+function scaleValue(value, oldMin = 500, oldMax = 2000, newMin = 0.4, newMax = 0.9) {
+    return ((value - oldMin) / (oldMax - oldMin)) * (newMax - newMin) + newMin;
+}
+
+// Function to play thunder sound
+function playThunderSound(thunderDelay) {
+    // Create a new audio element
+    const thunder = new Audio();
+
+    // Choose a random thunder sound from available options
+    const thunderSoundNumber = Math.floor(Math.random() * 3) + 1; // For 3 different thunder sounds
+    thunder.src = `assets/thunder${thunderSoundNumber}.mp3`;
+
+    // Randomize volume for distance effect
+    thunder.volume = Math.max(Math.min(scaleValue(thunderDelay), 1), 0); // Between 0.4 and 0.9
+
+    // Play the thunder sound
+    thunder.play().catch(error => {
+        console.error("Thunder sound couldn't play. This might be due to browser autoplay restrictions:", error);
+    });
+}
+
 export function initScreen(screenRef) {
     // Clear existing strips
     screenStrips.forEach(strip => strip.remove());
@@ -96,6 +168,28 @@ export function initScreen(screenRef) {
 
     screen.style.height = `${screenHeight}px`;
     screen.style.width = `${screenWidth}px`;
+
+    // Create lightning overlay element
+    const lightningOverlay = document.createElement("div");
+    lightningOverlay.id = "lightningOverlay";
+    lightningOverlay.style.position = "absolute";
+    lightningOverlay.style.top = "0";
+    lightningOverlay.style.left = "0";
+    lightningOverlay.style.width = "100%";
+    lightningOverlay.style.height = "100%";
+    lightningOverlay.style.backgroundColor = "white";
+    lightningOverlay.style.pointerEvents = "none";
+    lightningOverlay.style.zIndex = "9999";
+    lightningOverlay.style.opacity = "0";
+    screen.appendChild(lightningOverlay);
+
+    if (!screenRefGlobal) {
+        startRandomLightning();
+    }
+
+    // Set the global screenRef for later use
+    screenRefGlobal = screenRef;
+
 
     // Create screen strips
     for (let i = 0; i < screenWidth; i += stripWidth) {
@@ -128,8 +222,14 @@ export function initScreen(screenRef) {
 }
 
 export function castRays(gameState) {
+    // Store gameState reference for lightning effects
+    gameStateRef = gameState;
+
     requestAnimationFrame(() => {
         let stripIdx = 0;
+
+        // Update lightning effect if active
+        updateLightningEffect();
 
         for (let i = 0; i < numofrays; i++) {
             const rayScreenPos = (-numofrays / 2 + i) * stripWidth;
@@ -244,16 +344,73 @@ function castRay(rayAngle, stripIdx, gameState) {
             img.prevStyle.width = Math.floor(width * 2);
         }
 
+        // Apply lightning effect to the fog overlay if active
+        let fogOpacity = Math.min(distance / 3, 0.8);
+        if (lightningActive) {
+            // Reduce fog opacity during lightning (makes things brighter)
+            fogOpacity = Math.max(0, fogOpacity - lightningIntensity * 0.5);
+        }
+
         // Use opacity instead of rgba for better performance
         strip.fog.style.height = `${Math.floor(height)}px`;
         strip.fog.style.width = `${Math.floor(width * 2)}px`;
-        strip.fog.style.background = `rgba(0,0,0,${Math.min(distance / 3, 0.8)})`;
-
+        strip.fog.style.background = `rgba(0,0,0,${fogOpacity})`;
     }
 }
 
+// Update the background with lightning effect if active
 export function updateBackground(gameState, ceilingRef) {
     if (ceilingRef.current) {
-        ceilingRef.current.style.backgroundPosition = -200 * gameState.current.player.rotation + "px " + "100%";
+        // Base background position
+        const basePosition = -200 * gameState.current.player.rotation + "px " + "100%";
+
+        if (lightningActive && lightningIntensity > 0.1) {
+            // Apply a brighter filter during lightning
+            const brightness = 100 + Math.floor(lightningIntensity * 75);
+            ceilingRef.current.style.filter = `brightness(${brightness}%)`;
+        } else {
+            // Reset filter when no lightning
+            ceilingRef.current.style.filter = "brightness(100%)";
+        }
+
+        ceilingRef.current.style.backgroundPosition = basePosition;
+    }
+}
+
+// Create a simple lightning flash effect
+export function createLightning(intensity = 1.0, fadeSpeed = 0.05) {
+    lightningActive = true;
+    lightningIntensity = intensity;
+    lightningFadeSpeed = fadeSpeed;
+
+    // Apply lightning flash to overlay
+    const overlay = document.getElementById("lightningOverlay");
+    if (overlay) {
+        overlay.style.opacity = `${lightningIntensity}`;
+    }
+}
+
+// Update lightning effect each frame
+function updateLightningEffect() {
+    if (lightningActive) {
+        if (lightningIntensity > 0) {
+            lightningIntensity -= lightningFadeSpeed;
+
+            // Update overlay opacity
+            const overlay = document.getElementById("lightningOverlay");
+            if (overlay) {
+                overlay.style.opacity = `${Math.max(0, lightningIntensity)}`;
+            }
+
+            if (lightningIntensity <= 0) {
+                lightningActive = false;
+                lightningIntensity = 0;
+
+                // Reset overlay
+                if (overlay) {
+                    overlay.style.opacity = "0";
+                }
+            }
+        }
     }
 }
