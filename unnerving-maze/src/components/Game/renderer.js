@@ -252,7 +252,7 @@ function castRay(rayAngle, stripIdx, gameState) {
         // Use opacity instead of rgba for better performance
         strip.fog.style.height = `${Math.floor(height)}px`;
         strip.fog.style.width = `${Math.floor(width * 2)}px`;
-        strip.fog.style.background = `rgba(0,0,0,${Math.min(distance / 10, 0.8)})`;
+        strip.fog.style.background = `rgba(0,0,0,${Math.min(distance / 3, 0.8)})`;
 
     }
 }

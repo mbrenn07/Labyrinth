@@ -15,6 +15,66 @@ const instance = axios.create({
     timeout: undefined,
 });
 
+async function createCompositeDoll(faceUrl) {
+    return new Promise((resolve, reject) => {
+        const dollImg = new Image();
+        dollImg.src = 'assets/doll.png';
+        dollImg.onload = () => {
+            const faceImg = new Image();
+            faceImg.crossOrigin = "anonymous";
+            faceImg.src = faceUrl;
+            faceImg.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = dollImg.width;
+                canvas.height = dollImg.height;
+                const ctx = canvas.getContext('2d');
+
+                // Create temporary canvas for pixelation
+                const pixelation = 2; // Higher = more pixelated
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+
+                // Set scaled dimensions
+                const scaledWidth = 50 / pixelation;
+                const scaledHeight = 50 / pixelation;
+                tempCanvas.width = scaledWidth;
+                tempCanvas.height = scaledHeight;
+
+                // Draw face at low resolution
+                tempCtx.imageSmoothingEnabled = false;
+                tempCtx.drawImage(
+                    faceImg,
+                    0, 0,          // Source XY
+                    faceImg.width, // Source width
+                    faceImg.height,// Source height
+                    0, 0,          // Destination XY
+                    scaledWidth,    // Scaled width
+                    scaledHeight   // Scaled height
+                );
+
+                // Draw doll base
+                ctx.drawImage(dollImg, 0, 0);
+
+                // Draw pixelated face (disable smoothing for crisp pixels)
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(
+                    tempCanvas,
+                    0, 0,             // Source XY
+                    scaledWidth,     // Source width
+                    scaledHeight,    // Source height
+                    430, 10,          // Destination XY (adjust to match doll)
+                    200, 200           // Final face size
+                );
+
+                resolve(canvas.toDataURL());
+            };
+            faceImg.onerror = reject;
+        };
+        dollImg.onerror = reject;
+    });
+}
+
+
 export async function initSprites(gameState, screenRef) {
     gameState.current.mapSprites = [];
     gameState.current.spritePosition = Array.from({ length: gameState.current.mapHeight }, () => []);
@@ -25,7 +85,26 @@ export async function initSprites(gameState, screenRef) {
 
     const data = await instance.get("/players/random")
     data.data.forEach((player) => {
-        const path = JSON.parse(player.path).map((pathItem) => [parseFloat(pathItem.x), parseFloat(pathItem.y)])
+        const path = JSON.parse(player.path).map((pathItem) => {
+            let pathX = parseFloat(pathItem.x)
+            let pathY = parseFloat(pathItem.y)
+
+
+            const pathYInt = parseInt(pathItem.y)
+            let preciseY = pathY - pathYInt
+            preciseY = Math.max(preciseY, .6)
+            preciseY = Math.min(preciseY, .3)
+            pathY = pathYInt + preciseY
+
+            const pathXInt = parseInt(pathItem.x)
+            let preciseX = pathX - pathXInt
+            preciseX = Math.max(preciseX, .6)
+            preciseX = Math.min(preciseX, .3)
+            pathX = pathXInt + preciseX
+
+            return [pathX, pathY]
+
+        })
         const npc = new NPC(path[0][0], path[0][1], path);
         gameState.current.npcs.push(npc);
         gameState.current.mapSprites.push({
@@ -40,19 +119,32 @@ export async function initSprites(gameState, screenRef) {
     })
 
     const screen = screenRef.current;
-    gameState.current.sprites = gameState.current.mapSprites.map(sprite => {
-        let type = ""
-        let block = false
+
+    gameState.current.sprites = [];
+    for (const sprite of gameState.current.mapSprites) {
+        let type = "";
+        let block = false;
         const img = new Image();
 
         if (sprite.type !== undefined) {
             type = itemTypes[sprite.type];
-            block = type.block
-            img.src = type.img
+            block = type.block;
+            img.src = type.img;
         } else {
-            img.src = sprite.img;
-            block = sprite.block
+            if (sprite.isNPC) {
+                try {
+                    const compositeUrl = await createCompositeDoll(sprite.img);
+                    img.src = compositeUrl;
+                } catch (error) {
+                    console.error('Composite failed:', error);
+                    continue
+                }
+            } else {
+                img.src = sprite.img;
+            }
+            block = sprite.block;
         }
+
         img.style.display = "none";
         img.style.position = "absolute";
         img.style.overflow = "hidden";
@@ -69,8 +161,8 @@ export async function initSprites(gameState, screenRef) {
         gameState.current.spritePosition[sprite.y][sprite.x] = spriteObj;
         screen.appendChild(img);
 
-        return spriteObj;
-    });
+        gameState.current.sprites.push(spriteObj);
+    };
 
 }
 
@@ -119,7 +211,11 @@ export function renderSprites(gameState) {
 
         // Only process sprites within field of view
         if (Math.abs(spriteAngle) < fov / 1.5) {
-            const size = viewDist / (Math.cos(spriteAngle) * distance);
+            let size = viewDist / (Math.cos(spriteAngle) * distance);
+            const scaleFactor = 0.75; // Match your size scaling factor
+            if (sprite.isNPC) {
+                size *= scaleFactor; // Make NPCs twice as large
+            }
 
             const xPos = Math.tan(spriteAngle) * viewDist;
 
@@ -141,9 +237,17 @@ export function renderSprites(gameState) {
                 img.style.width = `${size * (sprite.numOfStates || 1)}px`;
                 prevStyle.width = size * (sprite.numOfStates || 1);
             }
-            if (((screenHeight - size) / 2) !== prevStyle.top) {
-                img.style.top = `${(screenHeight - size) / 2}px`;
-                prevStyle.top = (screenHeight - size) / 2;
+            let newTop;
+            if (sprite.isNPC) {
+                const verticalOffset = size * (1 - scaleFactor); // Push sprite down
+                newTop = (screenHeight - size) / 2 + verticalOffset;
+            } else {
+                newTop = (screenHeight - size) / 2;
+            }
+
+            if (newTop !== prevStyle.top) {
+                img.style.top = `${newTop}px`;
+                prevStyle.top = newTop;
             }
             if ((screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)) !== prevStyle.left) {
                 img.style.left = `${screenWidth / 2 + xPos - size / 2 - size * (sprite.state || 0)}px`;

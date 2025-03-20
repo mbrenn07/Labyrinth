@@ -5,8 +5,7 @@ export class NPC {
         this.path = path;
         this.currentPathIndex = 0;
         this.lastMoveTime = performance.now();
-        this.moveInterval = 100; // 1 second between moves
-        this.speed = 1; // Units per second for smooth movement
+        this.speed = .5 + (Math.random() / 10); // Pixels per second
 
         // Current target position
         this.targetX = path[0][0];
@@ -17,42 +16,52 @@ export class NPC {
         this.moveProgress = 0;
         this.startX = startX;
         this.startY = startY;
+        this.currentMoveDuration = 0; // Milliseconds per movement
     }
 
     update(currentTime) {
-        // Update smooth movement
         if (this.isMoving) {
-            const deltaTime = (currentTime - this.lastMoveTime) / this.moveInterval;
-            this.moveProgress = Math.min(deltaTime, 1);
+            const deltaTime = currentTime - this.lastMoveTime;
+            this.moveProgress = Math.min(deltaTime / this.currentMoveDuration, 1);
 
-            // Interpolate position
+            // Interpolate position smoothly
             this.x = this.startX + (this.targetX - this.startX) * this.moveProgress;
             this.y = this.startY + (this.targetY - this.startY) * this.moveProgress;
 
-            // Check if we've reached the target
             if (this.moveProgress >= 1) {
+                // Snap to target and immediately start next movement
                 this.isMoving = false;
                 this.x = this.targetX;
                 this.y = this.targetY;
                 this.lastMoveTime = currentTime;
+                this.moveToNextPoint();
             }
-        } else if (currentTime - this.lastMoveTime >= this.moveInterval) {
-            // Start moving to next point
+        } else {
+            // Start moving initially or if interrupted
             this.moveToNextPoint();
         }
     }
 
     moveToNextPoint() {
-        // Store start position
+        // Update to next path point
+        this.currentPathIndex = (this.currentPathIndex + 1) % this.path.length;
+        const nextX = this.path[this.currentPathIndex][0];
+        const nextY = this.path[this.currentPathIndex][1];
+
+        // Calculate movement parameters
         this.startX = this.x;
         this.startY = this.y;
+        this.targetX = nextX;
+        this.targetY = nextY;
 
-        // Update target position
-        this.currentPathIndex = (this.currentPathIndex + 1) % this.path.length;
-        this.targetX = this.path[this.currentPathIndex][0];
-        this.targetY = this.path[this.currentPathIndex][1];
+        const dx = this.targetX - this.startX;
+        const dy = this.targetY - this.startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Start movement
+        // Calculate duration based on distance and speed
+        this.currentMoveDuration = (distance / this.speed) * 1000;
+
+        // Initialize movement
         this.isMoving = true;
         this.moveProgress = 0;
         this.lastMoveTime = performance.now();
