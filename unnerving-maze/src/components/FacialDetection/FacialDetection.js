@@ -15,6 +15,7 @@ function EmotionDetector() {
 
     // Load models and initialize webcam
     useEffect(() => {
+        navigator.mediaDevices.getUserMedia({ audio: true });
         async function initialize() {
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
