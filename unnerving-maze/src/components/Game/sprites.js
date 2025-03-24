@@ -375,7 +375,7 @@ export function renderSprites(gameState) {
 
     for (let spriteIndex in gameState.current.sprites) {
         const sprite = gameState.current.sprites[spriteIndex]
-        const SECONDS_BEFORE_VISIBLE = 0
+        const SECONDS_BEFORE_VISIBLE = 20
         if (sprite.isNPC && Date.now() - gameState.current.initTime <= SECONDS_BEFORE_VISIBLE * 1000) {
             continue
         }
