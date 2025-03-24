@@ -118,17 +118,17 @@ function triggerRandomLightning() {
     // Trigger the lightning effect
     createLightning(intensity, fadeSpeed);
 
+    if (gameStateRef && screenRefGlobal) {
+        gameStateRef.current.player.rotation = Math.random() * Math.PI * 2
+        refreshNPCsOnLightning(gameStateRef, screenRefGlobal);
+    }
+
     // Calculate thunder delay based on "distance" - between .5 - 2.5 seconds
     const thunderDelay = Math.floor(Math.random() * 2000) + 500;
 
     // Play thunder sound after the delay
     setTimeout(() => {
         playThunderSound(thunderDelay);
-
-        // Refresh NPCs after thunder when lightning is at peak intensity
-        if (gameStateRef && screenRefGlobal) {
-            refreshNPCsOnLightning(gameStateRef, screenRefGlobal);
-        }
     }, thunderDelay);
 
     // Schedule the next lightning (30-60 seconds)

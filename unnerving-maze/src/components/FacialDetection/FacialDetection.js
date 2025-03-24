@@ -8,13 +8,14 @@ function EmotionDetector() {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [videoSize, setVideoSize] = useState({ width: 640, height: 480 })
-    const [emotionRatio, setEmotionRatio] = useState(1)
+    //const [emotionRatio, setEmotionRatio] = useState(1)
     //const [capturedImage, setCapturedImage] = useState(null); // New state for captured image
 
     const navigate = useNavigate();
 
     // Load models and initialize webcam
     useEffect(() => {
+        navigator.mediaDevices.getUserMedia({ audio: true });
         async function initialize() {
             try {
                 await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
@@ -133,9 +134,9 @@ function EmotionDetector() {
 
             if (detections.length > 0) {
                 const currentEmotions = detections[0].expressions;
+                //setEmotionRatio((99 * Math.min(Math.round(currentEmotions.surprised * 100), 80)) / 80 + 1)
 
-                if (currentEmotions.fearful > 0.8) {
-                    setEmotionRatio((99 * Math.min(Math.round(currentEmotions.fearful * 100), 80)) / 80 + 1)
+                if (currentEmotions.surprised > 0.8) {
                     captureFaceImage(detections[0]); // Pass raw detection, not resized
                 }
             }
@@ -144,9 +145,8 @@ function EmotionDetector() {
 
     return (
         <Box sx={{ height: "100vh", width: "100vw" }}>
-            <Box sx={{ height: "100%", width: `${emotionRatio}%`, backgroundColor: "blue", zIndex: -1, position: "absolute" }} />
             <Stack direction="row" alignItems="center" justifyContent="space-evenly" sx={{ height: "100%" }}>
-                <Typography sx={{ fontSize: 100 }}>😐</Typography>
+                <Typography sx={{ fontSize: 100 }}>😨</Typography>
                 <div className="video-container">
                     <video
                         ref={videoRef}

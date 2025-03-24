@@ -18,50 +18,8 @@ db = client['user-paths']
 players_collection = db['players']
 
 
-def check_rate_limit():
-    # Use client IP as identifier (or user ID if authenticated)
-    client_id = request.remote_addr
-
-    # Rate limit config
-    max_requests = 2
-    period_hours = 24
-
-    # Check existing records
-    rate_record = db.rate_limits.find_one({'_id': client_id})
-
-    if rate_record:
-        # Check if period has expired
-        if datetime.now() - rate_record['last_request'] < timedelta(hours=period_hours):
-            if rate_record['count'] >= max_requests:
-                return jsonify({"error": "Rate limit exceeded - 2 submissions per day"}), 429
-            # Increment count
-            db.rate_limits.update_one(
-                {'_id': client_id},
-                {'$inc': {'count': 1}}
-            )
-        else:
-            # Reset counter
-            db.rate_limits.update_one(
-                {'_id': client_id},
-                {'$set': {'count': 1, 'last_request': datetime.now()}}
-            )
-    else:
-        # First request
-        db.rate_limits.insert_one({
-            '_id': client_id,
-            'count': 1,
-            'last_request': datetime.now()
-        })
-
-    return None
-
-
 @app.route('/player', methods=['POST'])
 def create_player():
-    rate_limit_response = check_rate_limit()
-    if rate_limit_response:
-        return rate_limit_response
-
     # Get JSON data from request
     data = request.get_json()
 

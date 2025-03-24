@@ -19,6 +19,7 @@ export default function Game() {
         completed: false,
         sprites: [],
         spritePosition: [],
+        initCassets: false,
         map: map,
         keys: {},
         initTime: 0,

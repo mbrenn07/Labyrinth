@@ -1,15 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Typography } from "@mui/material"
+import { Box, Typography, CircularProgress, Stack, ButtonBase } from "@mui/material"
 import axios from "axios"
+import { redirect } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const WhisperDetector = () => {
   const [status, setStatus] = useState('idle'); // idle, calibrating, recording, processing, success, error
   const [progress, setProgress] = useState(0);
+  const [storedAudioBlob, setStoredAudioBlob] = useState()
 
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
   const backgroundNoiseLevel = useRef(0);
   const userAudioChunks = useRef([]);
+
+  const navigate = useNavigate();
 
   const instance = axios.create({
     baseURL: "https://labyrinth-backend-1095352764453.us-east4.run.app",
@@ -128,7 +133,7 @@ const WhisperDetector = () => {
       const source = audioContext.createMediaElementSource(audioElement);
       const analyser = audioContext.createAnalyser();
       source.connect(analyser);
-      //analyser.connect(audioContext.destination);
+      analyser.connect(audioContext.destination);
 
       analyser.fftSize = 256;
       const bufferLength = analyser.frequencyBinCount;
@@ -146,7 +151,7 @@ const WhisperDetector = () => {
 
         if (audioElement.ended) {
           // Compare with background noise
-          const threshold = backgroundNoiseLevel.current * 1.25; // Allow 50% louder than background
+          const threshold = backgroundNoiseLevel.current * 1.5; // Allow 50% louder than background
           if (maxUserVolume > threshold) {
             // User spoke too loudly
             setStatus('loud');
@@ -156,9 +161,8 @@ const WhisperDetector = () => {
             }, 3000);
           } else {
             // Success - user whispered appropriately
+            setStoredAudioBlob(audioBlob)
             setStatus('success');
-            // Call your function here
-            handleSuccessfulWhisper(audioBlob);
           }
         } else {
           requestAnimationFrame(checkAudio);
@@ -172,7 +176,7 @@ const WhisperDetector = () => {
     }
   };
 
-  const handleSuccessfulWhisper = async (audioBlob) => {
+  const handleSuccessfulWhisper = async () => {
     const blobToBase64 = (blob) => {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -182,13 +186,15 @@ const WhisperDetector = () => {
       });
     };
 
-    const base64Audio = await blobToBase64(audioBlob);
+    const base64Audio = await blobToBase64(storedAudioBlob);
 
     instance.post("/player", {
       "picture": localStorage.getItem("picture"),
       "path": localStorage.getItem("path"),
       "sound": base64Audio
     }).catch((e) => console.error(e))
+
+    navigate("/")
   };
 
   const resetRecording = () => {
@@ -212,15 +218,29 @@ const WhisperDetector = () => {
 
   const getEmoji = () => {
     if (status === "recording") {
-      return "👂"
+      return <Typography sx={{ fontSize: 200 }}>👂</Typography>
     } else if (status === "loud") {
-      return "🤫"
+      return <Typography sx={{ fontSize: 200 }}>🤫</Typography>
     } else if (status === "success") {
-      return "✅"
+      return (
+        <Stack direction="row">
+          <ButtonBase onClick={() => {
+            resetRecording()
+            startRecording()
+          }}>
+            <Typography sx={{ fontSize: 200 }}>🔁</Typography>
+          </ButtonBase>
+          <ButtonBase onClick={() => {
+            handleSuccessfulWhisper();
+          }}>
+            <Typography sx={{ fontSize: 200 }}>✅</Typography>
+          </ButtonBase>
+        </Stack>
+      ) 
     } else if (status === "playback") {
-      return "🤔"
+      return <CircularProgress size={200}/>
     } else {
-      return "🤐";
+      return <Typography sx={{ fontSize: 200 }}>🤐</Typography>;
     }
   }
 
@@ -228,7 +248,7 @@ const WhisperDetector = () => {
   return (
     <Box sx={{ backgroundColor: getBackgroundColor(), width: "100vw", height: "100vh" }}>
       <Box sx={{ position: "relative", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "fit-content" }}>
-        <Typography sx={{ fontSize: 200 }}>{getEmoji()}</Typography>
+        {getEmoji()}
       </Box>
     </Box>
   );
