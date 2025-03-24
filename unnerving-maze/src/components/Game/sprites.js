@@ -245,8 +245,7 @@ export async function addNPCs(gameState, screenRef) {
 
     // Process each sprite in mapSprites
     for (const sprite of gameState.current.mapSprites) {
-        // Skip if not an NPC and we already have sprites (for static elements)
-        if (!sprite.isNPC && gameState.current.sprites.length > 0) {
+        if (gameState.current.initCassets && !sprite.isNPC) {
             continue;
         }
 
@@ -290,7 +289,10 @@ export async function addNPCs(gameState, screenRef) {
         screen.appendChild(img);
 
         gameState.current.sprites.push(spriteObj);
+        
     }
+
+    gameState.current.initCassets = true
 }
 
 // Update the refreshNPCsOnLightning function to handle audio cleanup
