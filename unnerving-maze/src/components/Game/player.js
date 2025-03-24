@@ -10,7 +10,7 @@ export function initPlayer() {
     return {
         x: 25,
         y: 24,
-        rotation: 0,
+        rotation: 3 / 2 * Math.PI,
         velocity: { x: 0, y: 0 }, // Add velocity tracking
         moveSpeed: 0.075,
         rotationSpeed: 5,
@@ -201,7 +201,6 @@ function handlePickup(sprite, gameState) {
     // Mark sprite as collected
     sprite.collected = true;
     gameState.current.player.spritesCollected++
-    console.log("hi")
 
     // Remove from mapSprites
     const mapIndex = gameState.current.mapSprites.findIndex(s => s === sprite);
