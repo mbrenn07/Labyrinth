@@ -112,7 +112,7 @@ function EmotionDetector() {
         // Convert to base64 and store
         const base64Image = canvas.toDataURL('image/png');
         localStorage.setItem("picture", base64Image)
-        //navigate("/game")
+        navigate("/game")
         //setCapturedImage(base64Image)
     };
 
