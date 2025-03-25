@@ -194,7 +194,7 @@ const WhisperDetector = () => {
       "sound": base64Audio
     }).catch((e) => console.error(e))
 
-    navigate("/")
+    navigate("/notFound")
   };
 
   const resetRecording = () => {

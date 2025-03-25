@@ -8,19 +8,46 @@ import {
 import Game from "./components/Game"
 import FacialDetection from "./components/FacialDetection/FacialDetection"
 import AudioRecording from "./components/AudioRecording/AudioRecording"
+import NotFound from './components/NotFound/NotFound';
+
+const Redirector = ({ children }) => {
+  const completed = localStorage.getItem('completed');
+
+  if (completed === "true") {
+    return <NotFound />;
+  }
+
+  return children; // Render the intended component if no redirection is needed
+};
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <FacialDetection />,
+    element: (
+      <Redirector>
+        <FacialDetection />
+      </Redirector>
+    ),
   },
   {
     path: "game",
-    element: <Game />,
+    element: (
+      <Redirector>
+        <Game />
+      </Redirector>
+    ),
   },
   {
     path: "audio",
-    element: <AudioRecording />,
+    element: (
+      <Redirector>
+        <AudioRecording />
+      </Redirector>
+    ),
+  },
+  {
+    path: "notFound",
+    element: <NotFound />,
   }
 ]);
 
